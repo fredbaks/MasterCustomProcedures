@@ -23,7 +23,7 @@ import master.ProcedureHelper;
 
 public class BCDfsProc extends master.Procedure {
 
-    @Procedure(name = "master.cdfs", mode = READ)
+    @Procedure(name = "master.bcdfs", mode = READ)
     public Stream<BCDfsResult> stream(
             @Name(value = "graphName") String graphNameString,
             @Name(value = "configuration", defaultValue = "{}") Map<String, Object> configuration) {

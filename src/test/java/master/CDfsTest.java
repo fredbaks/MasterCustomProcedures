@@ -36,7 +36,7 @@ public class CDfsTest extends TestSetup {
             session.run(
                     "CREATE (a:Node {name:'A'}), (b:Node {name:'B'}), (c:Node {name:'C'}), (d:Node {name:'D'}), (e:Node {name:'E'}), (f:Node {name:'F'})"
                             +
-                            "CREATE (a)-[:REL]->(b), (a)-[:REL]->(c), (a)-[:REL]->(d), (b)-[:REL]->(e), (c)-[:REL]->(e), (d)-[:REL]->(e), (e)-[:REL]->(f)");
+                            "CREATE (a)-[:REL]->(b), (a)-[:REL]->(c), (a)-[:REL]->(d), (a)-[:REL]->(f), (b)-[:REL]->(e), (c)-[:REL]->(e), (d)-[:REL]->(e), (e)-[:REL]->(f)");
 
             session.run(
                     "MATCH (source: Node)-[:REL]->(target: Node) WITH gds.graph.project('cdfsGraph', source, target) as g return g.graphName");
@@ -65,12 +65,10 @@ public class CDfsTest extends TestSetup {
 
             assertTrue(source == src);
 
-            assertEquals(3, results.size(), "Results size should match");
-            assertEquals(3, paths.size(), "Paths length should match");
+            assertEquals(4, results.size(), "Results size should match");
+            assertEquals(4, paths.size(), "Paths length should match");
 
-            // assertTrue(count == 2, "Expected 2 paths but got " + count);
-
-            session.run("CALL gds.graph.drop('dfsEnumGraph') YIELD graphName");
+            session.run("CALL gds.graph.drop('cdfsGraph') YIELD graphName");
         }
     }
 

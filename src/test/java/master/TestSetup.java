@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,11 +31,11 @@ public class TestSetup {
                     "/var/lib/neo4j/conf/user-logs.xml")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
-                            "C:\\Users\\Maffe\\Desktop\\NTNU\\preMaster\\neo4j-procedure-template-2025.x\\neo4j-graph-data-science-2.23.0.jar"),
+                            System.getProperty("user.dir") + "\\neo4j-graph-data-science-2.23.0.jar"),
                     "/var/lib/neo4j/plugins/neo4j-graph-data-science-2.23.0.jar")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
-                            "C:\\Users\\Maffe\\Desktop\\NTNU\\preMaster\\neo4j-procedure-template-2025.x\\target\\master-procedures-0.0.1.jar"),
+                            System.getProperty("user.dir") + "\\target\\master-procedures-0.0.1.jar"),
                     "/var/lib/neo4j/plugins/master-procedures-0.0.1.jar")
             .withEnv("NEO4J_dbms_security_procedures_unrestricted", "gds.*,master.*")
             .withEnv("NEO4J_dbms_security_procedures_allowlist", "gds.*,master.*")
@@ -43,6 +44,11 @@ public class TestSetup {
     @BeforeAll
     public void start() {
         neo4jContainer.start();
+    }
+
+    @AfterAll
+    public void shutdown() {
+        neo4jContainer.close();
     }
 
     @BeforeEach
