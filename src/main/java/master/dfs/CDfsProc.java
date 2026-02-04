@@ -54,7 +54,7 @@ public class CDfsProc extends master.Procedure {
         log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
         CDfs dfsEnum = new CDfs(graph, source, target, k, log);
-        ArrayList<HugeLongArray> results = dfsEnum.startDfsEnum();
+        ArrayList<HugeLongArray> results = dfsEnum.startCDfs();
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
