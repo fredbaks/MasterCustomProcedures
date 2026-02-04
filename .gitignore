@@ -26,9 +26,5 @@ Thumbs.db
 .cache-main
 .cache-tests
 logs
-testlogs/debug.log
-testlogs/http.log
-testlogs/neo4j.log
-testlogs/query.log
-testlogs/security.log
+testlogs
 neo4j-graph-data-science-2.23.0.jar
