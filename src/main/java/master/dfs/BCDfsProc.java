@@ -53,8 +53,8 @@ public class BCDfsProc extends master.Procedure {
 
         log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
-        CDfs dfsEnum = new CDfs(graph, source, target, h, log);
-        ArrayList<HugeLongArray> results = dfsEnum.startDfsEnum();
+        BCDfs dfsEnum = new BCDfs(graph, source, target, h, log);
+        ArrayList<HugeLongArray> results = dfsEnum.startBCDfs();
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 

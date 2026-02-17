@@ -25,9 +25,12 @@ public class BCDfs {
     private BitSet visited;
     private HashMap<Long, Long> bar;
 
-    public ArrayList<HugeLongArray> startDfsEnum() {
+    public ArrayList<HugeLongArray> startBCDfs() {
 
         log.debug("Started BC-Dfs");
+
+        log.debug(graph.schema().toString());
+        log.debug(graph.schema().nodeSchema().toString());
 
         results = new ArrayList<HugeLongArray>();
 
@@ -35,13 +38,12 @@ public class BCDfs {
         stack.push(source);
 
         visited = new BitSet(graph.nodeCount());
-        visited.set(source);
 
         bar = new HashMap<Long, Long>();
 
         HugeLongArray path = HugeLongArray.newArray(k + 1);
 
-        computeDfsEnum(path, source, 0);
+        computeBcDfs(path, source, 0);
 
         return results;
     }
@@ -54,7 +56,7 @@ public class BCDfs {
         this.log = log;
     }
 
-    private void computeDfsEnum(HugeLongArray oldPath, long current, int counter) {
+    private long computeBcDfs(HugeLongArray oldPath, long current, int counter) {
 
         log.debug("ComputeDfs new depth, counter: " + counter);
 
@@ -62,41 +64,67 @@ public class BCDfs {
 
         HugeLongArray path = oldPath.copyOf(k + 1);
 
+        visited.set(source);
         path.set(counter, current);
 
         if (current == target) {
             log.debug("New path to results: " + path.toString());
             results.add(path);
-            return;
+            return 0L;
         }
 
-        if (counter > k && k > -1) {
-            log.debug("Path too long, counter on " + counter);
-            return;
-        }
+        if (counter <= k || k == -1) {
+            log.debug("degree of " + current + ": " + graph.degree(current));
 
-        log.debug("degree of " + current + ": " + graph.degree(current));
+            List<Long> neighbors = new ArrayList<Long>();
 
-        List<Long> neighbors = new ArrayList<Long>();
+            graph.forEachRelationship(current, (long source, long neighbor) -> {
 
-        graph.forEachRelationship(current, (long source, long neighbor) -> {
+                log.debug("Continouing with neighbor: " + neighbor + " visited: " + visited.get(neighbor));
 
-            log.debug("Continouing with neighbor: " + neighbor + " visited: " + visited.get(neighbor));
+                if (!visited.get(neighbor)) {
+                    neighbors.add(neighbor);
+                }
 
-            if (!visited.get(neighbor)) {
-                neighbors.add(neighbor);
+                return true;
+            });
+
+            for (long neighbor : neighbors) {
+                if (counter + 1 + bar.getOrDefault(neighbor, k + 1) <= k) {
+                    long f = computeBcDfs(path, neighbor, counter + 1);
+                    if (f != k + 1) {
+                        F = Long.min(F, f + 1);
+                    }
+                }
             }
+        }
 
-            return true;
-        });
-
-        for (long neighbor : neighbors) {
-            visited.set(neighbor);
-            computeDfsEnum(path, neighbor, counter + 1);
-            visited.clear(neighbor);
+        if (F == k + 1) {
+            bar.put(current, k - counter + 1);
+        } else {
+            updateBarrier(current, F);
         }
 
         log.debug("Finished with " + current);
         visited.clear(current);
+        return F;
+    }
+
+    private void updateBarrier(long node, long l) {
+        if (bar.get(node) > l) {
+            bar.put(node, l);
+
+            List<Long> neighbours = new ArrayList<Long>();
+
+            graph.forEachInverseRelationship(node, (long source, long incomingNeighbour) -> {
+                neighbours.add(incomingNeighbour);
+
+                return true;
+            });
+
+            for (long incomingNeighbour : neighbours) {
+                updateBarrier(incomingNeighbour, l + 1);
+            }
+        }
     }
 }
