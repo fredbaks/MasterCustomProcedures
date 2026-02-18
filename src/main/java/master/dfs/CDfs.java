@@ -25,14 +25,14 @@ public class CDfs {
 
     public ArrayList<HugeLongArray> startCDfs() {
 
-        log.debug("Started dfs");
+        log.debug("Started Cdfs");
 
         results = new ArrayList<HugeLongArray>();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
 
-        visited = new BitSet(graph.nodeCount());
+        visited = new BitSet();
 
         HugeLongArray path = HugeLongArray.newArray(k + 1);
 

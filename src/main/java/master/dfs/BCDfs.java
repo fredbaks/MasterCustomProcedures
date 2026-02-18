@@ -29,15 +29,12 @@ public class BCDfs {
 
         log.debug("Started BC-Dfs");
 
-        log.debug(graph.schema().toString());
-        log.debug(graph.schema().nodeSchema().toString());
-
         results = new ArrayList<HugeLongArray>();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
 
-        visited = new BitSet(graph.nodeCount());
+        visited = new BitSet();
 
         bar = new HashMap<Long, Long>();
 
@@ -56,24 +53,24 @@ public class BCDfs {
         this.log = log;
     }
 
-    private long computeBcDfs(HugeLongArray oldPath, long current, int counter) {
+    private long computeBcDfs(HugeLongArray oldPath, long current, int hopCount) {
 
-        log.debug("ComputeDfs new depth, counter: " + counter);
+        log.debug("ComputeDfs new depth, counter: " + hopCount);
 
         long F = k + 1;
 
         HugeLongArray path = oldPath.copyOf(k + 1);
 
         visited.set(source);
-        path.set(counter, current);
+        path.set(hopCount, current);
 
         if (current == target) {
             log.debug("New path to results: " + path.toString());
-            results.add(path);
+            results.add(path.copyOf(hopCount + 1));
             return 0L;
         }
 
-        if (counter <= k || k == -1) {
+        if (hopCount <= k || k == -1) {
             log.debug("degree of " + current + ": " + graph.degree(current));
 
             List<Long> neighbors = new ArrayList<Long>();
@@ -90,8 +87,8 @@ public class BCDfs {
             });
 
             for (long neighbor : neighbors) {
-                if (counter + 1 + bar.getOrDefault(neighbor, k + 1) <= k) {
-                    long f = computeBcDfs(path, neighbor, counter + 1);
+                if (hopCount + 1 + bar.getOrDefault(neighbor, k + 1) <= k) {
+                    long f = computeBcDfs(path, neighbor, hopCount + 1);
                     if (f != k + 1) {
                         F = Long.min(F, f + 1);
                     }
@@ -100,7 +97,7 @@ public class BCDfs {
         }
 
         if (F == k + 1) {
-            bar.put(current, k - counter + 1);
+            bar.put(current, k - hopCount + 1);
         } else {
             updateBarrier(current, F);
         }
