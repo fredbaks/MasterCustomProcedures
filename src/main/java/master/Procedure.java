@@ -4,11 +4,15 @@ import org.neo4j.gds.core.Username;
 import org.neo4j.gds.core.utils.progress.TaskRegistryFactory;
 import org.neo4j.gds.procedures.GraphDataScienceProcedures;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 
 public class Procedure {
+
+    @Context
+    public Transaction tx;
 
     @Context
     public GraphDataScienceProcedures facade;
