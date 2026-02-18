@@ -39,7 +39,7 @@ public class CDfsTest extends TestSetup {
                             "CREATE (a)-[:REL]->(b), (a)-[:REL]->(c), (a)-[:REL]->(d), (a)-[:REL]->(f), (b)-[:REL]->(e), (c)-[:REL]->(e), (d)-[:REL]->(e), (e)-[:REL]->(f)");
 
             session.run(
-                    "MATCH (source: Node)-[:REL]->(target: Node) WITH gds.graph.project('cdfsGraph', source, target) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('cdfsGraph', source, target) as g return g.graphName");
 
             Record record = session
                     .run("MATCH (a:Node {name:'A'}), (f:Node {name:'F'}) RETURN id(a) AS a_id, id(f) AS f_id").single();

@@ -39,7 +39,7 @@ public class DfsTest extends TestSetup {
                             "CREATE (a)-[:REL]->(b), (b)-[:REL]->(c), (c)-[:REL]->(d), (a)-[:REL]->(d), (a)-[:REL]->(e), (b)-[:REL]->(f), (d)-[:REL]->(e), (c)-[:REL]->(f), (f)-[:REL]->(g)");
 
             session.run(
-                    "MATCH (source: Node)-[:REL]->(target: Node) WITH gds.graph.project('dfsGraph', source, target) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('dfsGraph', source, target) as g return g.graphName");
 
             Long src = session.run("MATCH (a:Node {name:'A'}) RETURN id(a) AS id").single().get("id").asLong();
             // Long src = 3L;
