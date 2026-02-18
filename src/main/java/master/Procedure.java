@@ -9,7 +9,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
 
-public class Procedure {
+public abstract class Procedure {
 
     @Context
     public Transaction tx;
