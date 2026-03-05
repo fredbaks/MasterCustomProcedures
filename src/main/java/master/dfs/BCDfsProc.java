@@ -37,11 +37,11 @@ public class BCDfsProc extends master.Procedure {
 
         Long source = parseToSingleNodeId(configuration.get("sourceNode"), "sourceNode");
         Long target = parseToSingleNodeId(configuration.get("targetNode"), "targetNode");
-        long h = (long) configuration.get("h");
+        long k = (long) configuration.get("k");
 
         log.debug("Parsed sourceNode to Long: " + source);
         log.debug("Parsed targetNode to Long: " + target);
-        log.debug("Parsed h to Long: " + h);
+        log.debug("Parsed h to Long: " + k);
 
         Graph graph = procHelper.getGraph(graphNameString, Optional.empty());
 
@@ -53,10 +53,12 @@ public class BCDfsProc extends master.Procedure {
 
         log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
-        BCDfs dfsEnum = new BCDfs(graph, source, target, h, log);
+        BCDfs dfsEnum = new BCDfs(graph, source, target, k, log);
         ArrayList<HugeLongArray> results = dfsEnum.startBCDfs();
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
+
+        log.debug("Results: " + results);
 
         return Stream.of(new BCDfsResult(source, target, results, graph, pathFactoryFacade));
 

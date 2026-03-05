@@ -58,6 +58,8 @@ public class CDfsProc extends master.Procedure {
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
+        log.debug("Results: " + results);
+
         return Stream.of(new CDfsResult(source, target, results, graph, pathFactoryFacade));
 
     }
