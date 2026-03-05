@@ -3,6 +3,9 @@ package master;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -21,6 +24,8 @@ import org.testcontainers.utility.MountableFile;
 public class TestSetup {
 
     protected Driver driver;
+
+    protected static int[] EXPECTED_DFS_RESULTS = { 0, 0, 1, 4, 16, 75, 554 };
 
     @Container
     private static Neo4jContainer neo4jContainer = new Neo4jContainer(DockerImageName.parse("neo4j:2025.10.1"))
