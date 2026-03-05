@@ -51,26 +51,21 @@ public class CDfs {
 
     private void computeCDfs(HugeLongArray path, long current, int hopCount) {
 
-        log.debug("ComputeDfs new depth, hops: " + hopCount);
-
-        visited.set(source);
         path.set(hopCount, current);
 
         if (current == target) {
-            log.debug("New path to results: " + path.toString());
             results.add(path.copyOf(hopCount + 1));
             path.set(hopCount, 0);
             return;
         }
 
-        if (hopCount <= k || k == -1) {
-            log.debug("degree of " + current + ": " + graph.degree(current));
+        visited.set(current);
+
+        if (hopCount < k || k == -1) {
 
             List<Long> neighbors = new ArrayList<Long>();
 
             graph.forEachRelationship(current, (long source, long neighbor) -> {
-
-                log.debug("Continouing with neighbor: " + neighbor + " visited: " + visited.get(neighbor));
 
                 if (!visited.get(neighbor)) {
                     neighbors.add(neighbor);
@@ -84,7 +79,6 @@ public class CDfs {
             }
         }
 
-        log.debug("Finished with " + current);
         visited.clear(current);
         path.set(hopCount, 0);
         return;
