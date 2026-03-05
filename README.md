@@ -3,6 +3,33 @@
 This repository contains the code for Fredrik Baksaas' master thesis.  
 It is a collection of Neo4j custom procedures mostly dealing with source to target path enumeration problems.
 
+## Compiling and running test
+
+Because of the use of GDS in the custom made procedures another testing approach was needed that the Neo4j Procedure Template originally used.
+
+The new procedure tests use testcontainers, so docker is required as well as the latest Neo4j image.
+
+The container is injected with both GDS and this project's .jar files which means that the tests can not run if the executables are not present.
+
+Therefor, to compile the project use
+
+```
+.\mvnw clean compile -DskipTests
+```
+
+Without this the tests will fail every time because of a lack of executable.
+
+To run tests use
+
+```
+.\mvnw test
+```
+
+For a specific test only use
+
+```
+.\mvnw test -Dtest=$testname$
+```
 
 ---
 
