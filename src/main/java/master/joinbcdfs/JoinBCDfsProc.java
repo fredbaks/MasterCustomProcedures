@@ -1,4 +1,4 @@
-package master.dfs;
+package master.joinbcdfs;
 
 import static org.neo4j.gds.config.NodeIdParser.parseToSingleNodeId;
 import static org.neo4j.procedure.Mode.READ;
