@@ -1,6 +1,7 @@
 package master.dfs;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.gds.api.Graph;
@@ -18,16 +19,16 @@ public class CDfs {
     private long k;
     private Log log;
 
-    private ArrayList<HugeLongArray> results;
+    private HashMap<HugeLongArray, Long> results;
 
     private HugeLongArrayStack stack;
     private BitSet visited;
 
-    public ArrayList<HugeLongArray> startCDfs() {
+    public HashMap<HugeLongArray, Long> startCDfs() {
 
         log.debug("Started Cdfs");
 
-        results = new ArrayList<HugeLongArray>();
+        results = new HashMap<HugeLongArray, Long>();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
@@ -54,8 +55,7 @@ public class CDfs {
         path.set(hopCount, current);
 
         if (current == target) {
-            results.add(path.copyOf(hopCount + 1));
-            path.set(hopCount, 0);
+            results.put(path.copyOf(hopCount + 1), System.nanoTime());
             return;
         }
 
