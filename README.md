@@ -72,7 +72,7 @@ The user defined function is a simple join function that joins a list of strings
 See [`Join.java`](https://github.com/neo4j-examples/neo4j-procedure-template/blob/2025.x/src/main/java/example/Join.java) and [`JoinTest.java`](https://github.com/neo4j-examples/neo4j-procedure-template/blob/2025.x/src/test/java/example/JoinTest.java).
 
 ```cypher
-RETURN example.join(['A','quick','brown','fox'],' ') as sentence
+RETURN master.join(['A','quick','brown','fox'],' ') as sentence
 ```
 
 ---

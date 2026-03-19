@@ -37,7 +37,7 @@ public class JoinTest {
                 Session session = driver.session()) {
 
             // When
-            String result = session.run("RETURN example.join(['Hello', 'World']) AS result").single().get("result")
+            String result = session.run("RETURN master.join(['Hello', 'World']) AS result").single().get("result")
                     .asString();
 
             // Then
