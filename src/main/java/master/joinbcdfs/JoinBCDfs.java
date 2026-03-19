@@ -244,12 +244,31 @@ public class JoinBCDfs {
     }
 
     private void joinPartialResults() {
-        for (HugeLongArray leftResult : leftResults) {
-            for (HugeLongArray rightResult : rightResults) {
+        HashMap<Long, ArrayList<HugeLongArray>> leftResultHash = new HashMap<Long, ArrayList<HugeLongArray>>();
 
-                // leftResult last index are virtual targets
-                long leftSize = leftResult.size() - 1;
-                long rightSize = rightResult.size();
+        for (HugeLongArray leftResult : leftResults) {
+            // leftResult last index are virtual targets
+            Long leftSize = leftResult.size() - 1;
+
+            Long joinNode = leftResult.get(leftSize - 1);
+            if (!leftResultHash.containsKey(joinNode)) {
+                leftResultHash.put(joinNode, new ArrayList<HugeLongArray>());
+            }
+
+            ArrayList<HugeLongArray> arrayList = leftResultHash.get(joinNode);
+            arrayList.add(leftResult);
+        }
+
+        for (HugeLongArray rightResult : rightResults) {
+            long rightSize = rightResult.size();
+
+            Long joinNode = rightResult.get(0);
+
+            ArrayList<HugeLongArray> joinableLeftResults = leftResultHash.getOrDefault(joinNode,
+                    new ArrayList<HugeLongArray>());
+
+            for (HugeLongArray leftResult : joinableLeftResults) {
+                Long leftSize = leftResult.size() - 1;
 
                 if (leftResult.get(leftSize - 1) == rightResult.get(0)) {
                     if (leftSize == rightSize || leftSize == rightSize + 1) {
