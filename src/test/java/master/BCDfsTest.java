@@ -56,7 +56,7 @@ public class BCDfsTest extends TestSetup {
                 algParams.put("k", k);
 
                 Record r = session.run(
-                        "CALL master.cdfs($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
+                        "CALL master.bcdfs($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
                         Map.of("graphName", "bcdfsGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
@@ -65,6 +65,11 @@ public class BCDfsTest extends TestSetup {
                 assertTrue(source == src);
 
                 assertEquals(EXPECTED_DFS_RESULTS[k], results.size(), "Results size should match for k:" + k);
+
+                for (List<Long> path : results) {
+                    assertEquals(src, path.getFirst());
+                    assertEquals(trg, path.getLast());
+                }
             }
             session.run("CALL gds.graph.drop('bcdfsGraph') YIELD graphName");
         }

@@ -66,6 +66,11 @@ public class CDfsTest extends TestSetup {
                 assertTrue(source == src);
 
                 assertEquals(EXPECTED_DFS_RESULTS[k], results.size(), "Results size should match for k:" + k);
+
+                for (List<Long> path : results) {
+                    assertEquals(src, path.getFirst());
+                    assertEquals(trg, path.getLast());
+                }
             }
             session.run("CALL gds.graph.drop('cdfsGraph') YIELD graphName");
         }
