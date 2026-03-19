@@ -57,11 +57,16 @@ public class JoinBCDfsTest extends TestSetup {
                 algParams.put("k", k);
 
                 Record r = session.run(
-                        "CALL master.joinbcdfs($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
+                        "CALL master.joinbcdfs($graphName, $params) YIELD source, results, paths, nodeTimestamps, startTime, endTime RETURN source, results, paths, nodeTimestamps, startTime, endTime",
                         Map.of("graphName", "joinbcdfsGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
+
+                long startTime = r.get("startTime").asLong();
+                long endTime = r.get("endTime").asLong();
+
+                System.out.print("Algorithm used " + (((double) (endTime - startTime)) / 1000000000) + " seconds\n");
 
                 assertTrue(source == src);
 

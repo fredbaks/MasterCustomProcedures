@@ -5,6 +5,8 @@ import static org.neo4j.procedure.Mode.READ;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,36 +55,44 @@ public class JoinBCDfsProc extends master.Procedure {
 
         log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
+        Long startTime = System.nanoTime();
         JoinBCDfs dfsEnum = new JoinBCDfs(graph, source, target, k, log);
-        ArrayList<HugeLongArray> results = dfsEnum.startJoinBCDfs();
+        HashMap<HugeLongArray, Long> results = dfsEnum.startJoinBCDfs();
+        Long endTime = System.nanoTime();
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
         log.debug("result: " + results);
 
-        return Stream.of(new JoinBCDfsResult(source, target, results, graph, pathFactoryFacade));
+        return Stream.of(new JoinBCDfsResult(source, target, results, graph, pathFactoryFacade, startTime, endTime));
 
     }
 
     public static class JoinBCDfsResult {
         public Long source;
-        public List<List<Long>> results;
-        public List<Path> paths;
+        public List<List<Long>> results = new ArrayList<List<Long>>();
+        public Map<String, Long> nodeTimestamps = new HashMap<String, Long>();
+        public List<Path> paths = new ArrayList<Path>();
+        public Long startTime;
+        public Long endTime;
 
-        public JoinBCDfsResult(Long source, Long target, ArrayList<HugeLongArray> arrayListResults, Graph graph,
-                PathFactoryFacade pathFactoryFacade) {
+        public JoinBCDfsResult(Long source, Long target, HashMap<HugeLongArray, Long> timestamps, Graph graph,
+                PathFactoryFacade pathFactoryFacade, Long startTime, Long endTime) {
 
             this.source = graph.toOriginalNodeId(source);
 
-            results = new ArrayList<List<Long>>();
-            paths = new ArrayList<Path>();
+            this.startTime = startTime;
+            this.endTime = endTime;
 
-            if (arrayListResults == null) {
+            if (timestamps == null) {
                 return;
             }
 
-            for (HugeLongArray result : arrayListResults) {
+            ArrayList<HugeLongArray> arrayPaths = new ArrayList<HugeLongArray>(timestamps.keySet());
 
+            arrayPaths.sort(Comparator.comparing(timestamps::get));
+
+            for (HugeLongArray result : arrayPaths) {
                 results.add(Arrays.stream(result.toArray())
                         .boxed()
                         .map((node) -> {
@@ -93,6 +103,10 @@ public class JoinBCDfsProc extends master.Procedure {
                 paths.add(pathFactoryFacade.createPath(
                         this.results.getLast(),
                         RelationshipType.withName("NEXT")));
+
+                for (int i = 0; i < result.size(); i++) {
+                    nodeTimestamps.putIfAbsent(String.valueOf(result.get(i)), timestamps.get(result));
+                }
             }
         }
     }

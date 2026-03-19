@@ -62,7 +62,6 @@ public class CDfsTest extends TestSetup {
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
-                System.out.print(r.get("nodeTimestamps").asMap(value -> Long.parseLong(value.toString())) + "\n");
 
                 long startTime = r.get("startTime").asLong();
                 long endTime = r.get("endTime").asLong();

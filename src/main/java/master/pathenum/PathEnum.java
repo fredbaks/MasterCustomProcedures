@@ -23,7 +23,7 @@ public class PathEnum {
     private int k;
     private Log log;
 
-    private ArrayList<HugeLongArray> results;
+    private HashMap<HugeLongArray, Long> results;
 
     private Set<Long> sourceSet;
     private Set<Long> targetSet;
@@ -52,11 +52,11 @@ public class PathEnum {
         targetSet.add(target);
     }
 
-    public ArrayList<HugeLongArray> computePathEnum(boolean runJoin) {
+    public HashMap<HugeLongArray, Long> computePathEnum(boolean runJoin) {
 
         log.debug("Started PathEnum");
 
-        results = new ArrayList<HugeLongArray>();
+        results = new HashMap<HugeLongArray, Long>();
 
         BuildIndex();
 
@@ -237,7 +237,7 @@ public class PathEnum {
         Long node = M.get(MSize - 1);
 
         if (node == target) {
-            results.add(M);
+            results.put(M, System.nanoTime());
             return;
         }
 
@@ -382,7 +382,7 @@ public class PathEnum {
                     continue;
                 }
 
-                results.add(full);
+                results.put(full, System.nanoTime());
             }
         }
     }

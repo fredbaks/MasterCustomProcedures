@@ -18,15 +18,15 @@ public class BCDfs {
     private long k;
     private Log log;
 
-    private ArrayList<HugeLongArray> results;
+    private HashMap<HugeLongArray, Long> results;
 
     private BitSet visited;
     private HashMap<Long, Long> bar;
 
-    public ArrayList<HugeLongArray> startBCDfs() {
+    public HashMap<HugeLongArray, Long> startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        results = new ArrayList<HugeLongArray>();
+        results = new HashMap<HugeLongArray, Long>();
 
         visited = new BitSet(graph.nodeCount());
 
@@ -56,7 +56,7 @@ public class BCDfs {
         path.set(hopCount, current);
 
         if (current == target) {
-            results.add(path.copyOf(hopCount + 1));
+            results.put(path.copyOf(hopCount + 1), System.nanoTime());
             return 0L;
         }
 

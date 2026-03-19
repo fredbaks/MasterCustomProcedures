@@ -1,5 +1,6 @@
 package master.joinbcdfs;
 
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +23,8 @@ public class JoinBCDfs {
     private long kFloor;
     private Log log;
 
-    private ArrayList<HugeLongArray> results;
+    private HashMap<HugeLongArray, Long> results;
+    private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
     private ArrayList<HugeLongArray> rightResults;
 
@@ -35,11 +37,12 @@ public class JoinBCDfs {
 
     private Set<Long> emptySet = new HashSet<Long>();
 
-    public ArrayList<HugeLongArray> startJoinBCDfs() {
+    public HashMap<HugeLongArray, Long> startJoinBCDfs() {
 
         log.debug("Started Join BC-Dfs");
 
-        results = new ArrayList<HugeLongArray>();
+        results = new HashMap<HugeLongArray, Long>();
+        tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
         kFloor = (long) Math.floor(((double) k) / 2);
@@ -137,7 +140,7 @@ public class JoinBCDfs {
 
         computeBcDfs(path, source, 0, kCeil + 1);
 
-        leftResults = new ArrayList<HugeLongArray>(results);
+        leftResults = new ArrayList<HugeLongArray>(tempResults);
         results.clear();
     }
 
@@ -164,7 +167,7 @@ public class JoinBCDfs {
             computeBcDfs(path, vertex, 0, kFloor);
         });
 
-        rightResults = new ArrayList<HugeLongArray>(results);
+        rightResults = new ArrayList<HugeLongArray>(tempResults);
         results.clear();
     }
 
@@ -182,7 +185,7 @@ public class JoinBCDfs {
                     middleVertices.getOrDefault((long) (2 * (hopCount - 1)), emptySet).contains(path.get(hopCount - 1))
                     || middleVertices.getOrDefault((long) (2 * (hopCount - 1)) - 1, emptySet)
                             .contains(path.get(hopCount - 1))) {
-                results.add(path.copyOf(hopCount + 1));
+                tempResults.add(path.copyOf(hopCount + 1));
             }
             return 0L;
         }
@@ -295,7 +298,7 @@ public class JoinBCDfs {
                             continue;
                         }
 
-                        results.add(path);
+                        results.put(path, System.nanoTime());
                     }
                 }
             }
