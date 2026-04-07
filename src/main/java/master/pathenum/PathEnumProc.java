@@ -65,8 +65,6 @@ public class PathEnumProc extends master.Procedure {
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-        log.debug("Results: " + results);
-
         PathEnumResult pathEnumResult = new PathEnumResult(source, target, results, graph, pathFactoryFacade, startTime,
                 endTime);
 

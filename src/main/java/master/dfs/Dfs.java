@@ -22,8 +22,6 @@ public class Dfs {
 
         log.debug("Stopped after " + counter + " iterations");
 
-        log.debug("Returning " + result.toString());
-
         return result;
     }
 }
