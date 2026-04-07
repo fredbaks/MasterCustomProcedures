@@ -31,6 +31,8 @@ public class TestSetup {
     private static Neo4jContainer neo4jContainer = new Neo4jContainer(DockerImageName.parse("neo4j:2025.10.1"))
             .withoutAuthentication() // Disable password
             .withFileSystemBind(System.getProperty("user.dir") + "\\testlogs", "/logs", BindMode.READ_WRITE)
+            .withFileSystemBind(System.getProperty("user.dir") + "\\testoutput", "/var/lib/neo4j/output",
+                    BindMode.READ_WRITE)
             .withCopyFileToContainer(
                     MountableFile.forHostPath(System.getProperty("user.dir") + "\\user-logs.xml"),
                     "/var/lib/neo4j/conf/user-logs.xml")

@@ -3,10 +3,10 @@ package master.dfs;
 import static org.neo4j.gds.config.NodeIdParser.parseToSingleNodeId;
 import static org.neo4j.procedure.Mode.READ;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
@@ -16,12 +16,12 @@ import java.util.stream.Stream;
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import master.ProcedureHelper;
+import master.toCSV.PathEnumerationResultWriter;
 
 public class CDfsProc extends master.Procedure {
 
@@ -64,16 +64,18 @@ public class CDfsProc extends master.Procedure {
 
         log.debug("Results: " + results);
 
-        return Stream.of(new CDfsResult(source, target, results, graph, pathFactoryFacade, startTime, endTime));
+        CDfsResult cdfsResult = new CDfsResult(source, target, results, graph, pathFactoryFacade, startTime, endTime);
+
+        try {
+            new PathEnumerationResultWriter(cdfsResult, "CDFS", graphNameString, (int) k);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return Stream.of(cdfsResult);
     }
 
-    public static class CDfsResult {
-        public Long source;
-        public List<List<Long>> results = new ArrayList<List<Long>>();
-        public Map<String, Long> nodeTimestamps = new HashMap<String, Long>();
-        public List<Path> paths = new ArrayList<Path>();
-        public Long startTime;
-        public Long endTime;
+    public static class CDfsResult extends master.PathEnumerationResult {
 
         public CDfsResult(Long source, Long target, HashMap<HugeLongArray, Long> timestamps, Graph graph,
                 PathFactoryFacade pathFactoryFacade, Long startTime, Long endTime) {

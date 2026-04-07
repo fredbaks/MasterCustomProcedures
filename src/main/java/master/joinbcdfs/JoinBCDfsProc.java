@@ -3,11 +3,11 @@ package master.joinbcdfs;
 import static org.neo4j.gds.config.NodeIdParser.parseToSingleNodeId;
 import static org.neo4j.procedure.Mode.READ;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,12 +16,12 @@ import java.util.stream.Stream;
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import master.ProcedureHelper;
+import master.toCSV.PathEnumerationResultWriter;
 
 public class JoinBCDfsProc extends master.Procedure {
 
@@ -64,17 +64,20 @@ public class JoinBCDfsProc extends master.Procedure {
 
         log.debug("result: " + results);
 
-        return Stream.of(new JoinBCDfsResult(source, target, results, graph, pathFactoryFacade, startTime, endTime));
+        JoinBCDfsResult joinBCDfsResult = new JoinBCDfsResult(source, target, results, graph, pathFactoryFacade,
+                startTime, endTime);
+
+        try {
+            new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, (int) k);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return Stream.of(joinBCDfsResult);
 
     }
 
-    public static class JoinBCDfsResult {
-        public Long source;
-        public List<List<Long>> results = new ArrayList<List<Long>>();
-        public Map<String, Long> nodeTimestamps = new HashMap<String, Long>();
-        public List<Path> paths = new ArrayList<Path>();
-        public Long startTime;
-        public Long endTime;
+    public static class JoinBCDfsResult extends master.PathEnumerationResult {
 
         public JoinBCDfsResult(Long source, Long target, HashMap<HugeLongArray, Long> timestamps, Graph graph,
                 PathFactoryFacade pathFactoryFacade, Long startTime, Long endTime) {
