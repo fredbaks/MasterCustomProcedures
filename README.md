@@ -31,6 +31,98 @@ For a specific test only use
 .\mvnw test -Dtest=$testname$
 ```
 
+## Running Neo4j with GDS on a server
+
+A `docker-compose.yml` and `run.sh` helper script are included for deploying the full stack
+(Neo4j 2025.10.1 + GDS + custom procedures) on any Linux server accessible only via terminal.
+
+### Prerequisites
+
+- Docker Engine installed on the server
+- The project JAR built locally (`./mvnw clean package -DskipTests`) and copied to the server
+
+### First-time setup
+
+1. **Set a password** – edit `.env` and change `changeme` to a strong password:
+
+   ```
+   NEO4J_AUTH=neo4j/<your-password>
+   ```
+
+2. **Make the script executable** (only needed once):
+   ```bash
+   chmod +x run.sh
+   ```
+
+### Starting the container
+
+```bash
+# Foreground
+./run.sh
+
+# Background
+./run.sh -d
+```
+
+On first start, Neo4j automatically downloads the GDS plugin (~100 MB).
+The downloaded JAR is cached in `./plugins/` and reused on subsequent starts.
+
+### Other commands
+
+```bash
+# Tail container logs (detached mode)
+./run.sh --logs
+# Stop and remove the container
+./run.sh --stop
+```
+
+### Endpoints
+
+| Endpoint      | Address                   |
+| ------------- | ------------------------- |
+| Neo4j Browser | `http://<server-ip>:7474` |
+| Bolt          | `bolt://<server-ip>:7687` |
+
+### Bind-mounted directories
+
+| Host path    | Container path           | Purpose                          |
+| ------------ | ------------------------ | -------------------------------- |
+| `./logs/`    | `/logs`                  | Server log files                 |
+| `./output/`  | `/var/lib/neo4j/output`  | Procedure output files           |
+| `./plugins/` | `/var/lib/neo4j/plugins` | GDS + custom procedures JARs     |
+| `./conf/`    | `/var/lib/neo4j/conf`    | Logging config (`user-logs.xml`) |
+| `./CSV/`     | `/var/lib/neo4j/import`  | CSV datasets for `CsvLoader`     |
+
+---
+
+## Loading datasets — `CsvLoader`
+
+`CsvLoader` is a standalone Java utility that loads the CSV datasets in `CSV/` into the
+running Neo4j container. It always **clears the entire database first** before inserting,
+since only one database is available and the datasets must not overlap.
+
+### Graph schema
+
+Every CSV file follows the `START_ID,END_ID,TYPE` edge-list format and is loaded as:
+
+- **Nodes** — label `:Node`, property `id` (string)
+- **Relationships** — type `:EDGE`, directed from `START_ID` → `END_ID`
+
+### Running
+
+```bash
+java -cp target/master-procedures-0.0.1.jar master.CsvLoader <filename>
+```
+
+No argument prints usage and exits without touching the database.
+
+### Connection configuration
+
+| Environment variable | Default                 | Description                                                   |
+| -------------------- | ----------------------- | ------------------------------------------------------------- |
+| `NEO4J_BOLT_URL`     | `bolt://localhost:7687` | Bolt URL of the Neo4j instance                                |
+| `NEO4J_AUTH`         | `neo4j/neo4j`           | Credentials in `user/password` format; use `none` for no auth |
+
 ---
 
 **This repository is based on the Neo4j Procedure Template. Its readme is found below:**

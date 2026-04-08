@@ -1,0 +1,28 @@
+services:
+  neo4j:
+    image: neo4j:2025.10.1
+    env_file:
+      - .env
+    environment:
+      NEO4J_PLUGINS: '["graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*, master.*"
+      NEO4J_dbms_security_procedures_allowlist: "gds.*, master.*"
+      NEO4J_server_memory_pagecache_size: "512M"
+      NEO4J_server_default__listen__address: "0.0.0.0"
+      NEO4j_server_import.allow_read_from_filesystem: "true"
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./plugins:/var/lib/neo4j/plugins
+      - ./conf/user-logs.xml:/var/lib/neo4j/conf/user-logs.xml
+      - ./logs:/logs
+      - ./output:/var/lib/neo4j/output
+      - ./CSV:/var/lib/neo4j/import
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7474"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
