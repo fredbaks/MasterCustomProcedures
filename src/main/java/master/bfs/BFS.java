@@ -29,7 +29,7 @@ public class BFS {
 
         ignoreList.ifPresent((set) -> {
             for (Long node : set) {
-                if (node != target) {
+                if (!node.equals(target)) {
                     visited.set(node);
                 }
             }
@@ -40,7 +40,7 @@ public class BFS {
         while (!queue.isEmpty()) {
             currentNode = queue.remove();
 
-            if (currentNode == target) {
+            if (currentNode.equals(target)) {
                 break;
             }
 
@@ -48,6 +48,7 @@ public class BFS {
 
             graph.forEachRelationship(currentNode, (current, neighbor) -> {
                 if (!visited.get(neighbor)) {
+                    visited.set(neighbor);
                     neighbors.add(neighbor);
                     prev.put(neighbor, current);
                 }
@@ -56,12 +57,11 @@ public class BFS {
             });
 
             for (Long neighbor : neighbors) {
-                visited.set(neighbor);
                 queue.add(neighbor);
             }
         }
 
-        if (currentNode != target) {
+        if (!currentNode.equals(target)) {
             return new ArrayList<Long>();
         }
 
@@ -70,7 +70,7 @@ public class BFS {
 
         path.push(currentNode);
 
-        while (currentNode != source) {
+        while (!currentNode.equals(source)) {
 
             currentNode = prev.get(currentNode);
 

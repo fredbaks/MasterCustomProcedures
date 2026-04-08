@@ -60,8 +60,6 @@ public class PathEnum {
 
         BuildIndex();
 
-        log.debug("Index, distanceMatrix: " + distanceMatrix + ", neighborMap: " + hashMap);
-
         boolean doJoin = CardinalityEstimator();
 
         if (doJoin || runJoin) {
@@ -91,10 +89,22 @@ public class PathEnum {
             return true;
         });
 
+        HashSet<Long> unreachableNodes = new HashSet<Long>();
+
         for (Long node : allNodes) {
-            sourceDistance.put(node, BFS.computeBFS(source, node, graph, log, Optional.of(targetSet)).size() - 1);
-            targetDistance.put(node, BFS.computeBFS(node, target, graph, log, Optional.of(sourceSet)).size() - 1);
+
+            int sourcedis = BFS.computeBFS(source, node, graph, log, Optional.of(targetSet)).size() - 1;
+            int targetdis = BFS.computeBFS(node, target, graph, log, Optional.of(sourceSet)).size() - 1;
+
+            if (sourcedis == -1 || targetdis == -1) {
+                unreachableNodes.add(node);
+            } else {
+                sourceDistance.put(node, sourcedis);
+                targetDistance.put(node, targetdis);
+            }
         }
+
+        allNodes.removeAll(unreachableNodes);
 
         distanceMatrix = new ArrayList<ArrayList<ArrayList<Long>>>();
 
@@ -106,8 +116,8 @@ public class PathEnum {
         }
 
         for (Long node : allNodes) {
-            Integer sDistance = sourceDistance.get(node);
-            Integer tDistance = targetDistance.get(node);
+            int sDistance = sourceDistance.get(node);
+            int tDistance = targetDistance.get(node);
 
             if (sDistance + tDistance <= k) {
                 distanceMatrix.get(sDistance).get(tDistance).add(node);
@@ -128,12 +138,14 @@ public class PathEnum {
             List<Long> neighbors = new ArrayList<Long>();
 
             graph.forEachRelationship(node, (current, neighbor) -> {
-                neighbors.add(neighbor);
+                if (allNodes.contains(neighbor)) {
+                    neighbors.add(neighbor);
+                }
                 return true;
             });
 
             for (Long neighbor : neighbors) {
-                if (sourceDistance.get(node) + targetDistance.get(neighbor) + 1 <= k) {
+                if (sourceDistance.get(node) + targetDistance.getOrDefault(neighbor, k) + 1 <= k) {
                     offSet.add(neighbor);
                 }
             }
@@ -145,7 +157,6 @@ public class PathEnum {
         targetList.add(target);
         hashMap.put(target, targetList);
 
-        // AI written - OBS OBS
         bucketDegreeSum = new int[k + 2][k + 2][k + 1];
 
         // Special case: src is bucket (0,*)
@@ -192,16 +203,14 @@ public class PathEnum {
                 }
             }
         }
+
     }
 
-    // AI written OBS OBS
     private boolean CardinalityEstimator() {
 
-        // ── Step 1: seed from src (bucket (0,*)) ──────────────────────────────
         // Mirrors: bucket_degree_sum_[length_constraint_ - 1]
         long estimatedCount = bucketDegreeSum[0][targetDistance.getOrDefault(source, 0)][k - 1];
 
-        // ── Step 2: level-by-level multiplication ─────────────────────────────
         for (int i = 1; i < k; i++) {
             int budget = k - i - 1;
 
@@ -214,10 +223,8 @@ public class PathEnum {
                     if (bucketNodes.isEmpty())
                         continue;
 
-                    // vertex count for this bucket
                     vertexSum += bucketNodes.size();
 
-                    // cumulative degree at this budget, pre-computed
                     if (budget >= 0) {
                         degreeSum += bucketDegreeSum[j][kk][budget];
                     }
@@ -333,8 +340,6 @@ public class PathEnum {
                 leftSum += cardinalityEstimation.get(i).get(0).getOrDefault(node, 0);
                 rightSum += cardinalityEstimation.get(k).get(i).getOrDefault(node, 0);
             }
-
-            log.debug("for i: " + i + " with set: " + set + " Sum: " + (leftSum + rightSum));
 
             if (leftSum + rightSum < minValue) {
                 minValue = leftSum + rightSum;
