@@ -40,7 +40,7 @@ public class JoinBCDfsTest extends TestSetup {
             });
 
             session.run(
-                    "MATCH (source)-[]->(target) WITH gds.graph.project('joinbcdfsGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('testGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
 
             Record record = session
                     .run("MATCH (a:Node {number:1}), (f:Node {number:59}) RETURN id(a) AS a_id, id(f) AS f_id")
@@ -58,7 +58,7 @@ public class JoinBCDfsTest extends TestSetup {
 
                 Record r = session.run(
                         "CALL master.joinbcdfs($graphName, $params) YIELD source, results, paths, nodeTimestamps, startTime, endTime RETURN source, results, paths, nodeTimestamps, startTime, endTime",
-                        Map.of("graphName", "joinbcdfsGraph", "params", algParams)).single();
+                        Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
@@ -76,7 +76,7 @@ public class JoinBCDfsTest extends TestSetup {
                     assertEquals(trg, path.getLast());
                 }
             }
-            session.run("CALL gds.graph.drop('joinbcdfsGraph') YIELD graphName");
+            session.run("CALL gds.graph.drop('testGraph') YIELD graphName");
         }
     }
 

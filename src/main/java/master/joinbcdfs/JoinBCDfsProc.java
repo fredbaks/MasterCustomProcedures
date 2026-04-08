@@ -21,7 +21,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import master.ProcedureHelper;
-import master.toCSV.PathEnumerationResultWriter;
+import master.dataHandling.PathEnumerationResultWriter;
 
 public class JoinBCDfsProc extends master.Procedure {
 
@@ -66,7 +66,8 @@ public class JoinBCDfsProc extends master.Procedure {
                 startTime, endTime);
 
         try {
-            new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, (int) k);
+            new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, k, startTime, endTime,
+                    source, target);
         } catch (IOException e) {
             e.printStackTrace();
         }

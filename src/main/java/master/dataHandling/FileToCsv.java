@@ -1,4 +1,4 @@
-package master.toCSV;
+package master.dataHandling;
 
 import java.io.File;
 import java.io.IOException;

@@ -40,7 +40,7 @@ public class PathEnumTest extends TestSetup {
             });
 
             session.run(
-                    "MATCH (source)-[]->(target) WITH gds.graph.project('pathenumGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('testGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
 
             Record record = session
                     .run("MATCH (a:Node {number:1}), (f:Node {number:59}) RETURN id(a) AS a_id, id(f) AS f_id")
@@ -58,7 +58,7 @@ public class PathEnumTest extends TestSetup {
 
                 Record r = session.run(
                         "CALL master.pathenum($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
-                        Map.of("graphName", "pathenumGraph", "params", algParams)).single();
+                        Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
@@ -67,7 +67,7 @@ public class PathEnumTest extends TestSetup {
 
                 assertEquals(EXPECTED_DFS_RESULTS[k], results.size(), "Results size should match for k:" + k);
             }
-            session.run("CALL gds.graph.drop('pathenumGraph') YIELD graphName");
+            session.run("CALL gds.graph.drop('testGraph') YIELD graphName");
         }
     }
 
@@ -82,7 +82,7 @@ public class PathEnumTest extends TestSetup {
             });
 
             session.run(
-                    "MATCH (source)-[]->(target) WITH gds.graph.project('pathenumGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('testGraph', source, target, {}, {inverseIndexedRelationshipTypes: ['*']}) as g return g.graphName");
 
             Record record = session
                     .run("MATCH (a:Node {number:1}), (f:Node {number:59}) RETURN id(a) AS a_id, id(f) AS f_id")
@@ -101,7 +101,7 @@ public class PathEnumTest extends TestSetup {
 
                 Record r = session.run(
                         "CALL master.pathenum($graphName, $params) YIELD source, results, paths, nodeTimestamps, startTime, endTime RETURN source, results, paths, nodeTimestamps, startTime, endTime",
-                        Map.of("graphName", "pathenumGraph", "params", algParams)).single();
+                        Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
@@ -120,7 +120,7 @@ public class PathEnumTest extends TestSetup {
                     assertEquals(trg, path.getLast());
                 }
             }
-            session.run("CALL gds.graph.drop('pathenumGraph') YIELD graphName");
+            session.run("CALL gds.graph.drop('testGraph') YIELD graphName");
         }
     }
 

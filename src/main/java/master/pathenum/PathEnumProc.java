@@ -21,7 +21,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import master.ProcedureHelper;
-import master.toCSV.PathEnumerationResultWriter;
+import master.dataHandling.PathEnumerationResultWriter;
 
 public class PathEnumProc extends master.Procedure {
 
@@ -69,7 +69,8 @@ public class PathEnumProc extends master.Procedure {
                 endTime);
 
         try {
-            new PathEnumerationResultWriter(pathEnumResult, "PathEnum", graphNameString, (int) k);
+            new PathEnumerationResultWriter(pathEnumResult, "PathEnum", graphNameString, k, startTime, endTime, source,
+                    target);
         } catch (IOException e) {
             e.printStackTrace();
         }

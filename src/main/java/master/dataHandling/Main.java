@@ -1,4 +1,4 @@
-package master.toCSV;
+package master.dataHandling;
 
 public class Main {
 

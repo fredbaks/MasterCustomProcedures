@@ -21,7 +21,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 import master.ProcedureHelper;
-import master.toCSV.PathEnumerationResultWriter;
+import master.dataHandling.PathEnumerationResultWriter;
 
 public class CDfsProc extends master.Procedure {
 
@@ -65,7 +65,7 @@ public class CDfsProc extends master.Procedure {
         CDfsResult cdfsResult = new CDfsResult(source, target, results, graph, pathFactoryFacade, startTime, endTime);
 
         try {
-            new PathEnumerationResultWriter(cdfsResult, "CDFS", graphNameString, (int) k);
+            new PathEnumerationResultWriter(cdfsResult, "CDFS", graphNameString, k, startTime, endTime, source, target);
         } catch (IOException e) {
             e.printStackTrace();
         }

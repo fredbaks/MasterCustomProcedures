@@ -40,7 +40,7 @@ public class CDfsTest extends TestSetup {
             });
 
             session.run(
-                    "MATCH (source)-[]->(target) WITH gds.graph.project('cdfsGraph', source, target) as g return g.graphName");
+                    "MATCH (source)-[]->(target) WITH gds.graph.project('testGraph', source, target) as g return g.graphName");
 
             Record record = session
                     .run("MATCH (a:Node {number:1}), (f:Node {number:59}) RETURN id(a) AS a_id, id(f) AS f_id")
@@ -58,7 +58,7 @@ public class CDfsTest extends TestSetup {
 
                 Record r = session.run(
                         "CALL master.cdfs($graphName, $params) YIELD source, results, paths, nodeTimestamps, startTime, endTime RETURN source, results, paths, nodeTimestamps, startTime, endTime",
-                        Map.of("graphName", "cdfsGraph", "params", algParams)).single();
+                        Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
                 List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
@@ -77,7 +77,7 @@ public class CDfsTest extends TestSetup {
                     assertEquals(trg, path.getLast());
                 }
             }
-            session.run("CALL gds.graph.drop('cdfsGraph') YIELD graphName");
+            session.run("CALL gds.graph.drop('testGraph') YIELD graphName");
         }
     }
 
