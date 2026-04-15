@@ -24,20 +24,54 @@ ACTION="start"
 for arg in "$@"; do
   case "$arg" in
     --stop)  ACTION="stop" ;;
+    --start)  ACTION="start" ;;
+    --down)  ACTION="down" ;;
+    --refresh)  ACTION="refresh" ;;
     --logs)  ACTION="logs" ;;
     -d)      DETACH=true ;;
     *)
       echo -e "${RED}Unknown argument: $arg${NC}" >&2
-      echo "Usage: $0 [-d] [--stop] [--logs]" >&2
+      echo "Usage: $0 [-d] [--stop] [--start] [--down] [--logs]" >&2
       exit 1
       ;;
   esac
 done
 
 if [[ "$ACTION" == "stop" ]]; then
+  echo "Pausing Neo4j container..."
+  docker compose stop
+  echo -e "${GREEN}Stopped.${NC}"
+  exit 0
+fi
+
+if [[ "$ACTION" == "start" ]]; then
+  echo "Stopping Neo4j container..."
+  docker compose start
+  echo -e "${GREEN}Started.${NC}"
+  exit 0
+fi
+
+if [[ "$ACTION" == "refresh" ]]; then
+  JAR="target/master-procedures-0.0.1.jar"
+  if [[ -f "$JAR" ]]; then
+    cp "$JAR" plugins/
+    echo "  Copied $JAR -> plugins/"
+  else
+    echo -e "${RED}Error: $JAR not found.${NC}" >&2
+    echo "  Build the project first:"
+    echo "    ./mvnw clean package -DskipTests"
+    exit 1
+  fi
+  echo "Stopping Neo4j container..."
+  docker compose start
+  echo -e "${GREEN}Started.${NC}"
+  exit 0
+fi
+
+if [[ "$ACTION" == "down" ]]; then
   echo "Stopping Neo4j container..."
   docker compose down
-  echo -e "${GREEN}Stopped.${NC}"
+  echo -e "${GREEN}Torn down.${NC}"
   exit 0
 fi
 
