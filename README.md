@@ -36,23 +36,17 @@ For a specific test only use
 A `docker-compose.yml` and `run.sh` helper script are included for deploying the full stack
 (Neo4j 2025.10.1 + GDS + custom procedures) on any Linux server accessible only via terminal.
 
+The database is accessible via java code or `localhost:7474/browser/`.
+
 ### Prerequisites
 
 - Docker Engine installed on the server
-- The project JAR built locally (`./mvnw clean package -DskipTests`) and copied to the server
 
-### First-time setup
+**Script might need to be made executable** (only needed once):
 
-1. **Set a password** – edit `.env` and change `changeme` to a strong password:
-
-   ```
-   NEO4J_AUTH=neo4j/<your-password>
-   ```
-
-2. **Make the script executable** (only needed once):
-   ```bash
-   chmod +x run.sh
-   ```
+```bash
+chmod +x run.sh
+```
 
 ### Starting the container
 
@@ -64,9 +58,6 @@ A `docker-compose.yml` and `run.sh` helper script are included for deploying the
 ./run.sh -d
 ```
 
-On first start, Neo4j automatically downloads the GDS plugin (~100 MB).
-The downloaded JAR is cached in `./plugins/` and reused on subsequent starts.
-
 ### Other commands
 
 ```bash
@@ -75,13 +66,6 @@ The downloaded JAR is cached in `./plugins/` and reused on subsequent starts.
 # Stop and remove the container
 ./run.sh --stop
 ```
-
-### Endpoints
-
-| Endpoint      | Address                   |
-| ------------- | ------------------------- |
-| Neo4j Browser | `http://<server-ip>:7474` |
-| Bolt          | `bolt://<server-ip>:7687` |
 
 ### Bind-mounted directories
 
@@ -101,29 +85,36 @@ The downloaded JAR is cached in `./plugins/` and reused on subsequent starts.
 running Neo4j container. It always **clears the entire database first** before inserting,
 since only one database is available and the datasets must not overlap.
 
-### Graph schema
-
-Every CSV file follows the `START_ID,END_ID,TYPE` edge-list format and is loaded as:
-
-- **Nodes** — label `:Node`, property `id` (string)
-- **Relationships** — type `:EDGE`, directed from `START_ID` → `END_ID`
-
 ### Running
 
 ```bash
-java -cp target/master-procedures-0.0.1.jar master.CsvLoader <filename>
+java -cp target/master-procedures-0.0.1.jar master.dataHandling.CsvLoader <filename>
 ```
 
 No argument prints usage and exits without touching the database.
 
-### Connection configuration
-
-| Environment variable | Default                 | Description                                                   |
-| -------------------- | ----------------------- | ------------------------------------------------------------- |
-| `NEO4J_BOLT_URL`     | `bolt://localhost:7687` | Bolt URL of the Neo4j instance                                |
-| `NEO4J_AUTH`         | `neo4j/neo4j`           | Credentials in `user/password` format; use `none` for no auth |
-
 ---
+
+## Creating graph coverage plots
+
+Each run of an algorithm prodeces a results file in the `output/<graphProjectionName>-source_<sourceNodeId>-target_<targetNodeId>`. This files have the format `<algorithm>-<hopLimit>-<graphProjectionName>-<Timestamp>.csv`.
+
+The file graphCoverageVislualization.py produces plots of the graph coverage (node coverage) of algorithms run on the same graph projection and hoplimit in a specified folder. It accepts three parameters:
+
+- `--folder/-f <foldername>` - **Required**(str): Is the folder which the result files to be plotted is located
+- `--hoplimit/-k <hoplimit>` - **Required**(int): Is the hoplimit the result was produces with
+- `--show/-s` - **Optional**: Shows the plot when finished
+
+### Example
+
+```bash
+py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-source_0-target_56 --hoplimit 6
+
+#
+py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-source_0-target_56 --hoplimit 6 --show
+```
+
+The plotting program assumes the csv files using the same format as the files produces by `PathEnumerationResultWriter`. Using the procedures in this project produces files in folders which follows the expected structure and format.
 
 **This repository is based on the Neo4j Procedure Template. Its readme is found below:**
 
