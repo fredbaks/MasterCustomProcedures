@@ -1,0 +1,187 @@
+package master.dataHandling;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+
+import org.neo4j.driver.Driver;
+import org.neo4j.driver.Record;
+
+import master.neo4j.CypherConnector;
+import master.neo4j.Neo4jConnector;
+
+public class ExperimentHandler {
+
+    private String projectionName;
+    private int hopLimit;
+
+    private static final String OUTPUT_DIR_NAME = "source-target-pairs";
+    private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
+
+    private static final String[] ALGORITHMS = { "cdfs", "bcdfs", "joinbcdfs", "pathenum" };
+
+    private Driver driver;
+
+    private ArrayList<ArrayList<Long>> sourceTargetPairs;
+
+    public static void main(String[] args) {
+
+        if (args.length == 0) {
+            System.err.println("Creates random pairs of source target on given projection.");
+            System.exit(1);
+        }
+
+        String datasetName = args[0];
+        int hopLimit = Integer.parseInt(args[1]);
+        boolean isDataSetLoaded = Boolean.parseBoolean(args[2]);
+
+        try (Driver driver = Neo4jConnector.createDriver()) {
+            new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
+        }
+    }
+
+    private ExperimentHandler(Driver driver) {
+        this.driver = driver;
+    };
+
+    public void writeRandomPairs(String projectionName, int hopLimit) {
+
+        HashSet<ArrayList<Long>> sourceTargetPairs = new HashSet<ArrayList<Long>>();
+
+        int nodeCount = 0;
+
+        Record record = CypherConnector.runQuery(driver, "MATCH (a) RETURN COUNT(a) as nodeCount", true).get(0);
+        nodeCount = record.get("nodeCount").asInt();
+
+        Random random = new Random();
+
+        while (sourceTargetPairs.size() < 30) {
+            long source = random.nextLong(1, nodeCount);
+            long target = random.nextLong(1, nodeCount);
+
+            ArrayList<Long> pair = new ArrayList<Long>();
+            pair.add(source);
+            pair.add(target);
+
+            if (sourceTargetPairs.contains(pair) || source == target) {
+                continue;
+            }
+
+            try {
+                String queryString = String.format(
+                        "MATCH (source {id:'%d'}), (target {id:'%d'}) CALL master.bfs('%s', {sourceNode: source, targetNode: target, k: %d}) YIELD result RETURN result",
+                        source, target, projectionName, hopLimit);
+
+                Record bfsRecord = CypherConnector.runQuery(driver, queryString, true).get(0);
+
+                List<Long> bfsResult = bfsRecord.get("result").asList(v -> v.asLong());
+
+                if (bfsResult.size() == 0) {
+                    continue;
+                }
+
+                sourceTargetPairs.add(pair);
+            } catch (IndexOutOfBoundsException e) {
+            } catch (Exception e) {
+                System.out.println("Something went wrong: " + e.getMessage());
+                e.printStackTrace();
+                continue;
+            }
+        }
+
+        File dir = new File(OUTPUT_DIR);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String filePath = getFilePath(projectionName, hopLimit);
+
+        try (RandomAccessFile raf = new RandomAccessFile(filePath, "rw")) {
+            raf.setLength(0);
+
+            for (ArrayList<Long> pair : sourceTargetPairs) {
+                raf.writeBytes(pair.get(0) + "," + pair.get(1) + "\n");
+            }
+        } catch (Exception e) {
+            System.err.println(
+                    "Something went wrong while writing pairs to file: " + e.getMessage() + "\n" + e.getStackTrace());
+        }
+    }
+
+    private static String getFilePath(String projectionName, int hopLimit) {
+        String fileName = projectionName + "-k_" + hopLimit + ".csv";
+        String filePath = OUTPUT_DIR + File.separator + fileName;
+        return filePath;
+    }
+
+    public void loadSourceTargetPairs() {
+
+        String filePath = getFilePath(projectionName, hopLimit);
+
+        Path pairPath = Paths.get(filePath);
+        if (!Files.exists(pairPath)) {
+            System.out.println("Found no file with path: " + pairPath + ", creating from stratch");
+
+            writeRandomPairs(projectionName, hopLimit);
+        }
+
+        sourceTargetPairs = new ArrayList<ArrayList<Long>>();
+
+        try (Scanner scanner = new Scanner(new File(filePath))) {
+            while (scanner.hasNextLine()) {
+                String[] line = scanner.nextLine().split(",");
+                ArrayList<Long> pair = new ArrayList<Long>();
+                pair.add(Long.parseLong(line[0]));
+                pair.add(Long.parseLong(line[1]));
+                sourceTargetPairs.add(pair);
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("File not created by writeRandomPairs: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    /***
+     * 
+     * @param dataset
+     */
+    public void runExperiment(String dataset, int hopLimit, boolean isDataSetLoaded) {
+
+        this.projectionName = dataset;
+        this.hopLimit = hopLimit;
+
+        if (!isDataSetLoaded) {
+            System.out.println("Loading dataset " + dataset);
+            try {
+                CsvLoader.loadDataset(driver, dataset);
+            } catch (IllegalArgumentException e) {
+                System.err.print(e.getMessage());
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Dataset is already loaded, skipping");
+        }
+
+        System.out.println("Creating cypher projection");
+        CypherConnector.createProjection(driver, dataset, true);
+
+        System.out.println("Reading source pair data");
+        loadSourceTargetPairs();
+
+        for (String algorithm : ALGORITHMS) {
+            System.out.println("Running " + algorithm + " for every pair on " + dataset);
+            for (ArrayList<Long> pair : sourceTargetPairs) {
+                CypherConnector.runPathEnumeration(driver, pair.get(0), pair.get(1), algorithm, dataset, hopLimit);
+            }
+        }
+    }
+}
