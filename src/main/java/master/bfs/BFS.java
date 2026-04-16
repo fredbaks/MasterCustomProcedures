@@ -17,6 +17,15 @@ public class BFS {
 
     public static ArrayList<Long> computeBFS(Long source, Long target, Graph graph, Log log,
             Optional<Set<Long>> ignoreList) {
+        return computeBFS(source, target, graph, log, ignoreList, -1);
+    }
+
+    public static ArrayList<Long> computeBFS(Long source, Long target, Graph graph, Log log, int hopLimit) {
+        return computeBFS(source, target, graph, log, Optional.empty(), hopLimit);
+    }
+
+    public static ArrayList<Long> computeBFS(Long source, Long target, Graph graph, Log log,
+            Optional<Set<Long>> ignoreList, int hopLimit) {
 
         HugeLongArrayQueue queue = HugeLongArrayQueue.newQueue(graph.nodeCount());
         queue.add(source);
@@ -37,20 +46,27 @@ public class BFS {
 
         Long currentNode = -1L;
 
+        HashMap<Long, Integer> depthMap = new HashMap<Long, Integer>();
+        depthMap.put(source, 0);
+        int currentDepth = -1;
+
         while (!queue.isEmpty()) {
             currentNode = queue.remove();
+            currentDepth = depthMap.get(currentNode);
 
-            if (currentNode.equals(target)) {
+            if (currentNode.equals(target) || (hopLimit != -1 && currentDepth == hopLimit)) {
                 break;
             }
 
             ArrayList<Long> neighbors = new ArrayList<Long>();
+            final int depth = currentDepth;
 
             graph.forEachRelationship(currentNode, (current, neighbor) -> {
                 if (!visited.get(neighbor)) {
                     visited.set(neighbor);
                     neighbors.add(neighbor);
                     prev.put(neighbor, current);
+                    depthMap.put(neighbor, depth + 1);
                 }
 
                 return true;
