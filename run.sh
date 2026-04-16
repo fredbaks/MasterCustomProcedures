@@ -52,6 +52,7 @@ if [[ "$ACTION" == "start" ]]; then
 fi
 
 if [[ "$ACTION" == "refresh" ]]; then
+  docker compose stop
   JAR="target/master-procedures-0.0.1.jar"
   if [[ -f "$JAR" ]]; then
     cp "$JAR" plugins/
@@ -62,7 +63,6 @@ if [[ "$ACTION" == "refresh" ]]; then
     echo "    ./mvnw clean package -DskipTests"
     exit 1
   fi
-  echo "Stopping Neo4j container..."
   docker compose start
   echo -e "${GREEN}Started.${NC}"
   exit 0
