@@ -27,7 +27,7 @@ public class PathEnumerationResultWriter {
             long hopLimit, long startTime, long endTime, long sourceNode, long targetNode)
             throws IOException {
         String outputDir = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME + File.separator
-                + String.format("%s-source_%d-target_%d", graphName, sourceNode, targetNode);
+                + String.format("%s-k_%d", graphName, hopLimit);
 
         File dir = new File(outputDir);
         if (!dir.exists()) {
@@ -39,9 +39,10 @@ public class PathEnumerationResultWriter {
         this.filePath = outputDir + File.separator + fileName;
 
         csvComments = String.format(
-                "#Algorithm: %s\n#GraphName: %s\n#HopLimit: %d\n#StartTime: %d\n#EndTime: %d\n#SourceNode: %d\n#TargetNode: %d\n#NodeCount: %d\n",
+                "#Algorithm: %s\n#GraphName: %s\n#HopLimit: %d\n#PathCount: %d\n#StartTime: %d\n#EndTime: %d\n#TotalTime: %d\n#SourceNode: %d\n#TargetNode: %d\n#NodeCount: %d\n",
                 algorithmName,
-                graphName, hopLimit, startTime, endTime, sourceNode, targetNode,
+                graphName, hopLimit, result.paths.size(), startTime, endTime, endTime - startTime, sourceNode,
+                targetNode,
                 result.nodeTimestamps.entrySet().size());
 
         write(result);
