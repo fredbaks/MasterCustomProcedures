@@ -1,21 +1,17 @@
 package master.dataHandling;
 
-import io.github.cdimascio.dotenv.Dotenv;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.Path;
-import org.neo4j.driver.AuthToken;
-import org.neo4j.driver.AuthTokens;
-import org.neo4j.driver.Config;
+import java.nio.file.Paths;
+
 import org.neo4j.driver.Driver;
-import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Session;
 
-public class CsvLoader {
+import master.neo4j.Neo4jConnector;
+
+public class CsvLoader extends Neo4jConnector {
 
     private static final String CSV_DIR = "CSV";
-
-    private static final Dotenv DOTENV = Dotenv.configure().ignoreIfMissing().load();
 
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -55,14 +51,6 @@ public class CsvLoader {
                 filename, counts[0], counts[1]);
     }
 
-    static Driver createDriver() {
-        String boltUrl = envOrDefault("NEO4J_BOLT_URL", "bolt://localhost:7687");
-        AuthToken auth = parseAuth(envOrDefault("NEO4J_AUTH", "neo4j/neo4j"));
-        Config config = Config.builder().withoutEncryption().build();
-        System.out.println("Connecting to " + boltUrl + " ...");
-        return GraphDatabase.driver(boltUrl, auth, config);
-    }
-
     static void clearDatabase(Driver driver) {
         System.out.println("Clearing database ...");
         try (Session session = driver.session()) {
@@ -88,23 +76,5 @@ public class CsvLoader {
             var counters = summary.counters();
             return new long[] { counters.nodesCreated(), counters.relationshipsCreated() };
         }
-    }
-
-    private static String envOrDefault(String name, String defaultValue) {
-        String value = System.getenv(name);
-        if (value != null && !value.isBlank())
-            return value;
-        value = DOTENV.get(name);
-        if (value != null && !value.isBlank())
-            return value;
-        return defaultValue;
-    }
-
-    private static AuthToken parseAuth(String auth) {
-        if (auth == null || auth.equalsIgnoreCase("none") || !auth.contains("/")) {
-            return AuthTokens.none();
-        }
-        int slash = auth.indexOf('/');
-        return AuthTokens.basic(auth.substring(0, slash), auth.substring(slash + 1));
     }
 }

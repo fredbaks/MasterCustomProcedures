@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class PathEnumerationResultWriter {
 
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm-ss");
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH-mm");
 
     private static final String OUTPUT_DIR_NAME = "output";
     private static final String CSV_HEADER = "nodeId,firstDiscoveredAt\n";
@@ -35,7 +35,8 @@ public class PathEnumerationResultWriter {
         }
 
         String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-        String fileName = algorithmName + "-" + hopLimit + "-" + graphName + "-" + timestamp + ".csv";
+        String fileName = algorithmName + "-k_" + hopLimit + "-" + graphName + "-source_" + sourceNode + "-target_"
+                + targetNode + "-" + timestamp + ".csv";
         this.filePath = outputDir + File.separator + fileName;
 
         csvComments = String.format(
