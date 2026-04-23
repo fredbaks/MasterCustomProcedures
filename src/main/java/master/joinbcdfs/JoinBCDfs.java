@@ -1,6 +1,5 @@
 package master.joinbcdfs;
 
-import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -141,7 +140,7 @@ public class JoinBCDfs {
         computeBcDfs(path, source, 0, kCeil + 1);
 
         leftResults = new ArrayList<HugeLongArray>(tempResults);
-        results.clear();
+        tempResults.clear();
     }
 
     private void computeRightPaths() {
@@ -168,7 +167,7 @@ public class JoinBCDfs {
         });
 
         rightResults = new ArrayList<HugeLongArray>(tempResults);
-        results.clear();
+        tempResults.clear();
     }
 
     private long computeBcDfs(HugeLongArray oldPath, long current, int hopCount, long searchDepth) {
