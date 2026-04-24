@@ -5,6 +5,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import master.AlgorithmTimeoutException;
+import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
@@ -20,9 +30,10 @@ public class JoinBCDfs {
     private long k;
     private long kCeil;
     private long kFloor;
+    private long timeoutDuration;
     private Log log;
 
-    private HashMap<HugeLongArray, Long> results;
+    private ConcurrentHashMap<HugeLongArray, Long> results;
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
     private ArrayList<HugeLongArray> rightResults;
@@ -36,31 +47,59 @@ public class JoinBCDfs {
 
     private Set<Long> emptySet = new HashSet<Long>();
 
-    public HashMap<HugeLongArray, Long> startJoinBCDfs() {
+    private boolean timedOut = false;
+
+    public PathEnumerationAlgorithmResult startJoinBCDfs() {
 
         log.debug("Started Join BC-Dfs");
 
-        results = new HashMap<HugeLongArray, Long>();
+        results = new ConcurrentHashMap<>();
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
         kFloor = (long) Math.floor(((double) k) / 2);
 
-        findMiddleVertices();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> future = executor.submit(() -> {
+            findMiddleVertices();
+            if (Thread.currentThread().isInterrupted())
+                return;
+            computeLeftPaths();
+            if (Thread.currentThread().isInterrupted())
+                return;
+            computeRightPaths();
+            if (Thread.currentThread().isInterrupted())
+                return;
+            joinPartialResults();
+        });
+        try {
+            future.get(timeoutDuration, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            log.debug("TimedoutException sent");
+            timedOut = true;
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof AlgorithmTimeoutException) {
+                log.debug("AlgorithmTimeOutExcpetion caught");
+                timedOut = true;
+            } else {
+                log.warn("BCDfs encountered an unexpected exception: " + e.getCause().getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("BCDfs encountered an unexpected exception: " + e.getMessage());
+        } finally {
+            executor.shutdownNow();
+        }
 
-        computeLeftPaths();
-        computeRightPaths();
-
-        joinPartialResults();
-
-        return results;
+        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
     }
 
-    public JoinBCDfs(Graph graph, long source, long target, long k, Log log) {
+    public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
         this.graph = graph;
         this.source = source;
         this.target = target;
         this.k = k;
+        this.timeoutDuration = timeoutDuration;
         this.log = log;
     }
 
@@ -76,11 +115,16 @@ public class JoinBCDfs {
 
         for (int i = 1; i <= (double) kCeil; i++) {
 
+            // if (Thread.currentThread().isInterrupted())
+            // throw new AlgorithmTimeoutException();
+
             HashSet<Long> leftSide = new HashSet<Long>();
             HashSet<Long> rightSide = new HashSet<Long>();
 
             for (long node : lastLeftSide) {
                 graph.forEachRelationship(node, (long currentNode, long outgoingNeighbour) -> {
+                    // if (Thread.currentThread().isInterrupted())
+                    // throw new AlgorithmTimeoutException();
                     if (outgoingNeighbour == source || outgoingNeighbour == target) {
                         return true;
                     }
@@ -101,6 +145,8 @@ public class JoinBCDfs {
 
             for (long node : lastRightSide) {
                 graph.forEachInverseRelationship(node, (long currentNode, long incomingNeighbour) -> {
+                    // if (Thread.currentThread().isInterrupted())
+                    // throw new AlgorithmTimeoutException();
                     if (incomingNeighbour == source || incomingNeighbour == target) {
                         return true;
                     }
@@ -135,7 +181,7 @@ public class JoinBCDfs {
         visited = new BitSet();
         bar = new HashMap<Long, Long>();
 
-        HugeLongArray path = HugeLongArray.newArray(1);
+        HugeLongArray path = HugeLongArray.newArray(kCeil + 2);
 
         computeBcDfs(path, source, 0, kCeil + 1);
 
@@ -161,7 +207,7 @@ public class JoinBCDfs {
         });
 
         startVertices.forEach((vertex) -> {
-            HugeLongArray path = HugeLongArray.newArray(1);
+            HugeLongArray path = HugeLongArray.newArray(kFloor + 1);
             // Does not use a virtual start vertex -> only kFloor
             computeBcDfs(path, vertex, 0, kFloor);
         });
@@ -170,11 +216,12 @@ public class JoinBCDfs {
         tempResults.clear();
     }
 
-    private long computeBcDfs(HugeLongArray oldPath, long current, int hopCount, long searchDepth) {
+    private long computeBcDfs(HugeLongArray path, long current, int hopCount, long searchDepth) {
+
+        // if (Thread.currentThread().isInterrupted())
+        // throw new AlgorithmTimeoutException();
 
         long F = searchDepth + 1;
-
-        HugeLongArray path = oldPath.copyOf(hopCount + 1);
 
         path.set(hopCount, current);
 

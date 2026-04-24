@@ -76,6 +76,26 @@ public class BCDfsTest extends TestSetup {
                     assertEquals(trg, path.getLast());
                 }
             }
+
+            algParams.put("timeoutDuration", 1L);
+            algParams.put("k", 10);
+
+            Record r = session.run(
+                    "CALL master.bcdfs($graphName, $params) YIELD source, startTime, endTime, timedOut RETURN source, startTime, endTime, timedOut",
+                    Map.of("graphName", "testGraph", "params", algParams)).single();
+
+            long source = r.get("source").asLong();
+            boolean timedOut = r.get("timedOut").asBoolean();
+
+            long startTime = r.get("startTime").asLong();
+            long endTime = r.get("endTime").asLong();
+
+            System.out.print("Algorithm used " + (((double) (endTime - startTime)) / 1000000000) + " seconds\n");
+
+            assertTrue(source == src);
+
+            assertTrue(timedOut);
+
             session.run("CALL gds.graph.drop('testGraph') YIELD graphName");
         }
     }

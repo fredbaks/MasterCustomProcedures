@@ -4,29 +4,24 @@ import static org.neo4j.gds.config.NodeIdParser.parseToSingleNodeId;
 import static org.neo4j.procedure.Mode.READ;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import master.PathEnumerationAlgorithmResult;
+import master.PathEnumerationResult;
 import master.ProcedureHelper;
 import master.dataHandling.PathEnumerationResultWriter;
 
 public class JoinBCDfsProc extends master.Procedure {
 
     @Procedure(name = "master.joinbcdfs", mode = READ)
-    public Stream<JoinBCDfsResult> stream(
+    public Stream<PathEnumerationResult> stream(
             @Name(value = "graphName") String graphNameString,
             @Name(value = "configuration", defaultValue = "{}") Map<String, Object> configuration) {
 
@@ -55,18 +50,23 @@ public class JoinBCDfsProc extends master.Procedure {
 
         log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
+        long timeoutDuration = configuration.containsKey("timeoutDuration")
+                ? ((Number) configuration.get("timeoutDuration")).longValue()
+                : 120000L;
+
         Long startTime = System.nanoTime();
-        JoinBCDfs dfsEnum = new JoinBCDfs(graph, source, target, k, log);
-        HashMap<HugeLongArray, Long> results = dfsEnum.startJoinBCDfs();
+        JoinBCDfs dfsEnum = new JoinBCDfs(graph, source, target, k, timeoutDuration, log);
+        PathEnumerationAlgorithmResult results = dfsEnum.startJoinBCDfs();
         Long endTime = System.nanoTime();
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-        JoinBCDfsResult joinBCDfsResult = new JoinBCDfsResult(source, target, results, graph, pathFactoryFacade,
-                startTime, endTime);
+        PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target, results.results, graph,
+                pathFactoryFacade,
+                startTime, endTime, results.timedOut);
 
         try {
-            new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, k, startTime, endTime,
+            new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, k,
                     source, target);
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,42 +74,5 @@ public class JoinBCDfsProc extends master.Procedure {
 
         return Stream.of(joinBCDfsResult);
 
-    }
-
-    public static class JoinBCDfsResult extends master.PathEnumerationResult {
-
-        public JoinBCDfsResult(Long source, Long target, HashMap<HugeLongArray, Long> timestamps, Graph graph,
-                PathFactoryFacade pathFactoryFacade, Long startTime, Long endTime) {
-
-            this.source = graph.toOriginalNodeId(source);
-
-            this.startTime = startTime;
-            this.endTime = endTime;
-
-            if (timestamps == null) {
-                return;
-            }
-
-            ArrayList<HugeLongArray> arrayPaths = new ArrayList<HugeLongArray>(timestamps.keySet());
-
-            arrayPaths.sort(Comparator.comparing(timestamps::get));
-
-            for (HugeLongArray result : arrayPaths) {
-                results.add(Arrays.stream(result.toArray())
-                        .boxed()
-                        .map((node) -> {
-                            return graph.toOriginalNodeId(node);
-                        })
-                        .collect(Collectors.toList()));
-
-                paths.add(pathFactoryFacade.createPath(
-                        this.results.getLast(),
-                        RelationshipType.withName("NEXT")));
-
-                for (int i = 0; i < result.size(); i++) {
-                    nodeTimestamps.putIfAbsent(String.valueOf(result.get(i)), timestamps.get(result));
-                }
-            }
-        }
     }
 }

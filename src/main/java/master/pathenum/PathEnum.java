@@ -11,6 +11,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import master.AlgorithmTimeoutException;
+import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
@@ -21,9 +30,10 @@ public class PathEnum {
     private long source;
     private long target;
     private int k;
+    private long timeoutDuration;
     private Log log;
 
-    private HashMap<HugeLongArray, Long> results;
+    private ConcurrentHashMap<HugeLongArray, Long> results;
 
     private Set<Long> sourceSet;
     private Set<Long> targetSet;
@@ -38,11 +48,14 @@ public class PathEnum {
 
     private HashSet<Long> allNodes;
 
-    public PathEnum(Graph graph, Long source, Long target, int k, Log log) {
+    private boolean timedOut;
+
+    public PathEnum(Graph graph, Long source, Long target, int k, long timeoutDuration, Log log) {
         this.source = source;
         this.target = target;
         this.k = k;
         this.graph = graph;
+        this.timeoutDuration = timeoutDuration;
         this.log = log;
 
         sourceSet = new HashSet<Long>();
@@ -52,28 +65,49 @@ public class PathEnum {
         targetSet.add(target);
     }
 
-    public HashMap<HugeLongArray, Long> computePathEnum(boolean runJoin) {
+    public PathEnumerationAlgorithmResult computePathEnum(boolean runJoin) {
 
         log.debug("Started PathEnum");
 
-        results = new HashMap<HugeLongArray, Long>();
+        results = new ConcurrentHashMap<>();
 
-        BuildIndex();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> future = executor.submit(() -> {
+            BuildIndex();
+            if (Thread.currentThread().isInterrupted())
+                return;
 
-        boolean doJoin = CardinalityEstimator();
+            boolean doJoin = CardinalityEstimator();
 
-        if (doJoin || runJoin) {
-            int cutIndex = JoinOrderOptimization();
-
-            JoinOnIndex(cutIndex);
-        } else {
-            HugeLongArray path = HugeLongArray.newArray(1);
-            path.addTo(0, source);
-
-            DfsSearch(path);
+            if (doJoin || runJoin) {
+                int cutIndex = JoinOrderOptimization();
+                if (Thread.currentThread().isInterrupted())
+                    return;
+                JoinOnIndex(cutIndex);
+            } else {
+                HugeLongArray path = HugeLongArray.newArray(k + 1);
+                path.set(0, source);
+                DfsSearch(path, 1);
+            }
+        });
+        try {
+            future.get(timeoutDuration, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            timedOut = true;
+        } catch (java.util.concurrent.ExecutionException e) {
+            if (e.getCause() instanceof AlgorithmTimeoutException) {
+                timedOut = true;
+            } else {
+                log.warn("PathEnum encountered an unexpected exception: " + e.getCause().getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("PathEnum encountered an unexpected exception: " + e.getMessage());
+        } finally {
+            executor.shutdownNow();
         }
 
-        return results;
+        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
     }
 
     private void BuildIndex() {
@@ -238,13 +272,14 @@ public class PathEnum {
         return estimatedCount > 100_000;
     }
 
-    private void DfsSearch(HugeLongArray M) {
-        int MSize = (int) M.size();
+    private void DfsSearch(HugeLongArray M, int MSize) {
+        if (Thread.currentThread().isInterrupted())
+            throw new AlgorithmTimeoutException();
 
         Long node = M.get(MSize - 1);
 
         if (node == target) {
-            results.put(M, System.nanoTime());
+            results.put(M.copyOf(MSize), System.nanoTime());
             return;
         }
 
@@ -262,10 +297,8 @@ public class PathEnum {
                 continue;
             }
 
-            HugeLongArray newM = M.copyOf(MSize + 1);
-            newM.addTo(MSize, neighbor);
-
-            DfsSearch(newM);
+            M.set(MSize, neighbor);
+            DfsSearch(M, MSize + 1);
         }
     }
 
@@ -355,10 +388,10 @@ public class PathEnum {
     private void JoinOnIndex(int cutIndex) {
         ArrayList<HugeLongArray> R_a = new ArrayList<HugeLongArray>();
 
-        HugeLongArray M = HugeLongArray.newArray(1);
+        HugeLongArray M = HugeLongArray.newArray(k + 1);
         M.set(0L, source);
 
-        Search(M, 0, cutIndex + 1, R_a);
+        Search(M, 0, cutIndex + 1, 1, R_a);
 
         Set<Long> cutNodes = new HashSet<>();
         for (HugeLongArray path : R_a) {
@@ -368,9 +401,9 @@ public class PathEnum {
         HashMap<Long, ArrayList<HugeLongArray>> R_b = new HashMap<>();
         for (Long node : cutNodes) {
             ArrayList<HugeLongArray> R_b_v = new ArrayList<>();
-            HugeLongArray Mv = HugeLongArray.newArray(1);
+            HugeLongArray Mv = HugeLongArray.newArray(k + 1);
             Mv.set(0, node);
-            Search(Mv, cutIndex, k - cutIndex + 1, R_b_v);
+            Search(Mv, cutIndex, k - cutIndex + 1, 1, R_b_v);
             R_b.put(node, R_b_v);
         }
 
@@ -392,11 +425,12 @@ public class PathEnum {
         }
     }
 
-    private void Search(HugeLongArray M, int i, int l, ArrayList<HugeLongArray> R) {
-        int MSize = (int) M.size();
+    private void Search(HugeLongArray M, int i, int l, int MSize, ArrayList<HugeLongArray> R) {
+        if (Thread.currentThread().isInterrupted())
+            throw new AlgorithmTimeoutException();
 
         if (MSize == l) {
-            R.add(M);
+            R.add(M.copyOf(MSize));
             return;
         }
 
@@ -405,10 +439,8 @@ public class PathEnum {
         Set<Long> set = NeighborIndex(node, k - i - MSize, true);
 
         for (Long neighbor : set) {
-            HugeLongArray newM = M.copyOf(MSize + 1);
-            newM.set(MSize, neighbor);
-
-            Search(newM, i, l, R);
+            M.set(MSize, neighbor);
+            Search(M, i, l, MSize + 1, R);
         }
     }
 

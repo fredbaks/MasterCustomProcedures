@@ -3,6 +3,15 @@ package master.bcdfs;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import master.AlgorithmTimeoutException;
+import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
@@ -16,42 +25,66 @@ public class BCDfs {
     private long source;
     private long target;
     private long k;
+    private long timeoutDuration;
     private Log log;
 
-    private HashMap<HugeLongArray, Long> results;
+    private ConcurrentHashMap<HugeLongArray, Long> results;
 
     private BitSet visited;
     private HashMap<Long, Long> bar;
 
-    public HashMap<HugeLongArray, Long> startBCDfs() {
+    private boolean timedOut = false;
+
+    public PathEnumerationAlgorithmResult startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        results = new HashMap<HugeLongArray, Long>();
+        results = new ConcurrentHashMap<>();
 
         visited = new BitSet(graph.nodeCount());
 
         bar = new HashMap<Long, Long>();
 
-        HugeLongArray path = HugeLongArray.newArray(1);
+        HugeLongArray path = HugeLongArray.newArray(k + 1);
 
-        computeBcDfs(path, source, 0);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> future = executor.submit(() -> computeBcDfs(path, source, 0));
+        try {
+            future.get(timeoutDuration, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            log.debug("TimedoutException sent");
+            timedOut = true;
+        } catch (java.util.concurrent.ExecutionException e) {
+            if (e.getCause() instanceof AlgorithmTimeoutException) {
+                log.debug("AlgorithmTimeOutExcpetion caught");
+                timedOut = true;
+            } else {
+                log.warn("BCDfs encountered an unexpected exception: " + e.getCause().getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("BCDfs encountered an unexpected exception: " + e.getMessage());
+        } finally {
+            executor.shutdownNow();
+        }
 
-        return results;
+        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
     }
 
-    public BCDfs(Graph graph, long source, long target, long k, Log log) {
+    public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
         this.graph = graph;
         this.source = source;
         this.target = target;
         this.k = k;
+        this.timeoutDuration = timeoutDuration;
         this.log = log;
     }
 
-    private long computeBcDfs(HugeLongArray oldPath, long current, int hopCount) {
+    private long computeBcDfs(HugeLongArray path, long current, int hopCount) {
+
+        if (Thread.currentThread().isInterrupted())
+            throw new AlgorithmTimeoutException();
 
         long F = k + 1;
-
-        HugeLongArray path = oldPath.copyOf(hopCount + 1);
 
         path.set(hopCount, current);
 

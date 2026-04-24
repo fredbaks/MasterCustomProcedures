@@ -3,6 +3,15 @@ package master.dfs;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import master.AlgorithmTimeoutException;
+import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
@@ -17,18 +26,21 @@ public class CDfs {
     private long source;
     private long target;
     private long k;
+    private long timeoutDuration;
     private Log log;
 
-    private HashMap<HugeLongArray, Long> results;
+    private ConcurrentHashMap<HugeLongArray, Long> results;
 
     private HugeLongArrayStack stack;
     private BitSet visited;
 
-    public HashMap<HugeLongArray, Long> startCDfs() {
+    private boolean timedOut = false;
+
+    public PathEnumerationAlgorithmResult startCDfs() {
 
         log.debug("Started Cdfs");
 
-        results = new HashMap<HugeLongArray, Long>();
+        results = new ConcurrentHashMap<>();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
@@ -37,20 +49,41 @@ public class CDfs {
 
         HugeLongArray path = HugeLongArray.newArray(k + 1);
 
-        computeCDfs(path, source, 0);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<?> future = executor.submit(() -> computeCDfs(path, source, 0));
+        try {
+            future.get(timeoutDuration, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            timedOut = true;
+        } catch (java.util.concurrent.ExecutionException e) {
+            if (e.getCause() instanceof AlgorithmTimeoutException) {
+                timedOut = true;
+            } else {
+                log.warn("CDfs encountered an unexpected exception: " + e.getCause().getMessage());
+            }
+        } catch (Exception e) {
+            log.warn("CDfs encountered an unexpected exception: " + e.getMessage());
+        } finally {
+            executor.shutdownNow();
+        }
 
-        return results;
+        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
     }
 
-    public CDfs(Graph graph, long source, long target, long k, Log log) {
+    public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
         this.graph = graph;
         this.source = source;
         this.target = target;
         this.k = k;
+        this.timeoutDuration = timeoutDuration;
         this.log = log;
     }
 
     private void computeCDfs(HugeLongArray path, long current, int hopCount) {
+
+        if (Thread.currentThread().isInterrupted())
+            throw new AlgorithmTimeoutException();
 
         path.set(hopCount, current);
 
