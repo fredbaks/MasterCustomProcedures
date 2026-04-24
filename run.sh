@@ -44,13 +44,6 @@ if [[ "$ACTION" == "stop" ]]; then
   exit 0
 fi
 
-if [[ "$ACTION" == "start" ]]; then
-  echo "Stopping Neo4j container..."
-  docker compose start
-  echo -e "${GREEN}Started.${NC}"
-  exit 0
-fi
-
 if [[ "$ACTION" == "refresh" ]]; then
   docker compose stop
   JAR="target/master-procedures-0.0.1.jar"
