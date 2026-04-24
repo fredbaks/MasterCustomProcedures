@@ -3,7 +3,7 @@ neo4j-home
 \#*
 target
 out
-CSV
+largeCSV
 .project
 .classpath
 .settings
