@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.exceptions.ClientException;
 
 public class CypherConnector extends Neo4jConnector {
 
@@ -72,12 +73,18 @@ public class CypherConnector extends Neo4jConnector {
 
         try {
             runQuery(driver, projectionQuery, false);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Graphprojection with name " + projectionName + " already exists.");
+        } catch (ClientException e) {
+            if (e.getMessage().contains("already exists")) {
+                System.out.println("Graphprojection with name " + projectionName + " already exists.");
 
-            if (withForce) {
-                dropProjection(driver, projectionName);
-                createProjection(driver, projectionName, false);
+                if (withForce) {
+                    dropProjection(driver, projectionName);
+                    createProjection(driver, projectionName, false);
+                }
+            } else {
+                System.err.println(e.getMessage());
+                e.printStackTrace();
+                System.exit(0);
             }
         }
     };

@@ -11,6 +11,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
@@ -27,6 +31,8 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
     private static final String[] ALGORITHMS = { "cdfs", "bcdfs", "joinbcdfs", "pathenum" };
+
+    private int TASK_COUNT;
 
     private Driver driver;
 
@@ -51,6 +57,22 @@ public class ExperimentHandler {
     private ExperimentHandler(Driver driver) {
         this.driver = driver;
     };
+
+    private void printProgressBar(int completed) {
+        int barWidth = 50;
+        double fraction = (double) completed / TASK_COUNT;
+        int filled = (int) (fraction * barWidth);
+        StringBuilder bar = new StringBuilder("\r[");
+        for (int i = 0; i < barWidth; i++) {
+            bar.append(i < filled ? '#' : ' ');
+        }
+        int percent = (int) (fraction * 100);
+        bar.append(String.format("] %3d%% (%d/%d)", percent, completed, TASK_COUNT));
+        System.out.print(bar);
+        if (completed == TASK_COUNT) {
+            System.out.println();
+        }
+    }
 
     public void writeRandomPairs(String projectionName, int hopLimit) {
 
@@ -177,11 +199,41 @@ public class ExperimentHandler {
         System.out.println("Reading source pair data");
         loadSourceTargetPairs();
 
+        TASK_COUNT = ALGORITHMS.length * sourceTargetPairs.size();
+
+        AtomicInteger completedTasks = new AtomicInteger(0);
+        printProgressBar(0);
+
+        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
+
         for (String algorithm : ALGORITHMS) {
-            System.out.println("Running " + algorithm + " for every pair on " + dataset);
             for (ArrayList<Long> pair : sourceTargetPairs) {
-                CypherConnector.runPathEnumeration(driver, pair.get(0), pair.get(1), algorithm, dataset, hopLimit);
+                Callable<Void> task = new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        CypherConnector.runPathEnumeration(driver, pair.get(0), pair.get(1), algorithm, dataset,
+                                hopLimit);
+                        printProgressBar(completedTasks.incrementAndGet());
+                        return null;
+                    }
+                };
+
+                tasks.add(task);
+
             }
         }
+
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        try {
+            executor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            System.err.println("Something happened during execution of algorithms: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
+
     }
+
 }
