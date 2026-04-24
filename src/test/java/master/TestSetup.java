@@ -34,7 +34,7 @@ public class TestSetup {
             .withFileSystemBind(System.getProperty("user.dir") + "\\testoutput", "/var/lib/neo4j/output",
                     BindMode.READ_WRITE)
             .withCopyFileToContainer(
-                    MountableFile.forHostPath(System.getProperty("user.dir") + "\\user-logs.xml"),
+                    MountableFile.forHostPath(System.getProperty("user.dir") + "\\conf\\user-logs.xml"),
                     "/var/lib/neo4j/conf/user-logs.xml")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(

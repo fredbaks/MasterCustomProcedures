@@ -86,13 +86,6 @@ fi
 echo "Preparing host directories..."
 mkdir -p logs output plugins conf
 
-if [[ -f user-logs.xml ]]; then
-  cp user-logs.xml conf/user-logs.xml
-  echo "  Copied user-logs.xml -> conf/"
-else
-  echo -e "${YELLOW}  Warning: user-logs.xml not found – skipping logging config.${NC}"
-fi
-
 JAR="target/master-procedures-0.0.1.jar"
 if [[ -f "$JAR" ]]; then
   cp "$JAR" plugins/

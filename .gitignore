@@ -32,6 +32,5 @@ testoutput
 neo4j-graph-data-science-2.23.0.jar
 .env
 plugins
-conf
 output
 plots
