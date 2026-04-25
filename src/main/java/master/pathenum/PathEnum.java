@@ -104,7 +104,7 @@ public class PathEnum {
                 log.warn("PathEnum encountered an unexpected exception: " + e.getCause().getMessage());
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
+                e.getCause().printStackTrace(pw);
                 String sStackTrace = sw.toString();
                 log.warn("Stacktrace: " + sStackTrace);
             }
