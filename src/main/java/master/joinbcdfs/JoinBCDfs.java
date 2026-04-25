@@ -1,5 +1,7 @@
 package master.joinbcdfs;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,6 +86,11 @@ public class JoinBCDfs {
                 timedOut = true;
             } else {
                 log.warn("BCDfs encountered an unexpected exception: " + e.getCause().getMessage());
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                String sStackTrace = sw.toString();
+                log.warn("Stacktrace: " + sStackTrace);
             }
         } catch (Exception e) {
             log.warn("BCDfs encountered an unexpected exception: " + e.getMessage());

@@ -4,6 +4,8 @@ import org.neo4j.logging.Log;
 
 import master.bfs.BFS;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -100,6 +102,11 @@ public class PathEnum {
                 timedOut = true;
             } else {
                 log.warn("PathEnum encountered an unexpected exception: " + e.getCause().getMessage());
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                String sStackTrace = sw.toString();
+                log.warn("Stacktrace: " + sStackTrace);
             }
         } catch (Exception e) {
             log.warn("PathEnum encountered an unexpected exception: " + e.getMessage());
