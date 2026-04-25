@@ -1,9 +1,5 @@
 package master.pathenum;
 
-import org.neo4j.logging.Log;
-
-import master.bfs.BFS;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -11,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,11 +17,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import master.AlgorithmTimeoutException;
-import master.PathEnumerationAlgorithmResult;
-
 import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
+import org.neo4j.logging.Log;
+
+import master.AlgorithmTimeoutException;
+import master.PathEnumerationAlgorithmResult;
+import master.bfs.BFS;
 
 public class PathEnum {
 
@@ -121,31 +120,32 @@ public class PathEnum {
         sourceDistance = new HashMap<Long, Integer>();
         targetDistance = new HashMap<Long, Integer>();
 
-        allNodes = new HashSet<Long>((int) graph.nodeCount());
+        sourceDistance.put(source, 0);
+        targetDistance.put(target, 0);
 
-        // The nodes are added to a list first as method calls inside graph.forEach has
-        // not run as excepted in the past
-        graph.forEachNode((node) -> {
-            allNodes.add(node);
-            return true;
-        });
+        allNodes = new HashSet<Long>();
+        allNodes.add(source);
+        allNodes.add(target);
 
-        HashSet<Long> unreachableNodes = new HashSet<Long>();
+        HashMap<Long, Integer> sourceBFSTree = BFS.computeBFSTree(source, graph, log, Optional.of(targetSet), k);
+        HashMap<Long, Integer> targetBFSTree = BFS.computeInverseBFSTree(target, graph, log, Optional.of(sourceSet), k);
 
-        for (Long node : allNodes) {
+        int sourceTargetDistance = BFS.computeBFS(source, target, graph, log, Optional.empty()).size() - 1;
 
-            int sourcedis = BFS.computeBFS(source, node, graph, log, Optional.of(targetSet)).size() - 1;
-            int targetdis = BFS.computeBFS(node, target, graph, log, Optional.of(sourceSet)).size() - 1;
+        sourceDistance.put(target, sourceTargetDistance);
+        targetDistance.put(source, sourceTargetDistance);
 
-            if (sourcedis == -1 || targetdis == -1) {
-                unreachableNodes.add(node);
-            } else {
+        for (Map.Entry<Long, Integer> sourceDistanceEntry : sourceBFSTree.entrySet()) {
+            Long node = sourceDistanceEntry.getKey();
+            int sourcedis = sourceDistanceEntry.getValue();
+            int targetdis = targetBFSTree.getOrDefault(node, -1);
+
+            if (targetdis != -1) {
+                allNodes.add(node);
                 sourceDistance.put(node, sourcedis);
                 targetDistance.put(node, targetdis);
             }
         }
-
-        allNodes.removeAll(unreachableNodes);
 
         distanceMatrix = new ArrayList<ArrayList<ArrayList<Long>>>();
 
