@@ -44,6 +44,10 @@ public class CsvLoader extends Neo4jConnector {
 
         clearDatabase(driver);
 
+        try (Session session = driver.session()) {
+            session.run("CREATE CONSTRAINT node_id_unique IF NOT EXISTS FOR (n:Node) REQUIRE n.id IS UNIQUE").consume();
+        }
+
         String filename = name + ".csv";
         System.out.println("Loading " + filename + " ...");
         long[] counts = loadEdgeCsv(driver, filename);
