@@ -14,9 +14,8 @@ public class CsvLoader extends Neo4jConnector {
     private static final String CSV_DIR = "CSV";
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.err.println("Usage: DataLoader <name>");
-            System.err.println("  Loads CSV/<name>.csv into the Neo4j database.");
+        if (args.length < 0) {
+            System.out.println("A filename is required");
             System.exit(1);
         }
 

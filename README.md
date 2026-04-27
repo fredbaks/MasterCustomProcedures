@@ -63,8 +63,12 @@ chmod +x run.sh
 ```bash
 # Tail container logs (detached mode)
 ./run.sh --logs
-# Stop and remove the container
+# Stop the container
 ./run.sh --stop
+# Remove the container
+./run.sh --down
+# Refresh custom plugin jar in the docker container, stopping and starting in the process
+./run.sh --refresh
 ```
 
 ### Bind-mounted directories
@@ -79,11 +83,21 @@ chmod +x run.sh
 
 ---
 
+## Converting datasets - `FileToCSV`
+
+`FileToCSV` is a Java utility that converts files of different formats describing a graph into .csv formatted files. Neo4j can more easily load .csv files through cypher.
+File created by FileToCSV are placed in `CSV/`, and are on the format expected by `CsvLoader`.
+
+### Running
+
+```bash
+java -cp target/master-procedures-0.0.1.jar master.dataHandling.FileToCSV <filePath>
+```
+
 ## Loading datasets — `CsvLoader`
 
 `CsvLoader` is a standalone Java utility that loads the CSV datasets in `CSV/` into the
-running Neo4j container. It always **clears the entire database first** before inserting,
-since only one database is available and the datasets must not overlap.
+running Neo4j container.
 
 ### Running
 
@@ -97,9 +111,11 @@ No argument prints usage and exits without touching the database.
 
 ## Creating graph coverage plots
 
-Each run of an algorithm prodeces a results file in the `output/<graphProjectionName>-source_<sourceNodeId>-target_<targetNodeId>`. This files have the format `<algorithm>-<hopLimit>-<graphProjectionName>-<Timestamp>.csv`.
+Each run of an algorithm prodeces a results file in the `output/<graphProjectionName>-k_<hop-limit>`. This files have the format `<algorithm>-<hopLimit>-<graphProjectionName>-source_<sourceId>-target_<targetId>-<Timestamp>.csv`.
 
-The file graphCoverageVislualization.py produces plots of the graph coverage (node coverage) of algorithms run on the same graph projection and hoplimit in a specified folder. It accepts three parameters:
+The file graphCoverageVislualization.py produces plots of graph coverages (node coverage) of each algorithm found in the folder, which shoudl be of same graph projection and hoplimit. It averages the runtime per 0.1 percent over all executions of the same algorithm.
+
+It accepts three parameters:
 
 - `--folder/-f <foldername>` - **Required**(str): Is the folder which the result files to be plotted is located
 - `--hoplimit/-k <hoplimit>` - **Required**(int): Is the hoplimit the result was produces with
@@ -108,15 +124,40 @@ The file graphCoverageVislualization.py produces plots of the graph coverage (no
 ### Example
 
 ```bash
-py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-source_0-target_56 --hoplimit 6
+py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-k_3 --hoplimit 3
 
-#
-py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-source_0-target_56 --hoplimit 6 --show
+py visualization/graphCoverageVisualization.py --folder outputs/bio-grid-yeast-k_6 --hoplimit 6 --show
 ```
 
 The plotting program assumes the csv files using the same format as the files produces by `PathEnumerationResultWriter`. Using the procedures in this project produces files in folders which follows the expected structure and format.
 
-**This repository is based on the Neo4j Procedure Template. Its readme is found below:**
+## Batch running queries - `ExperimentHandler`
+
+The jar contains a Java class created specifically for running many, parallel enumeration queries. This is used to automate larger scale result production for the thesis.
+
+It creates queries by first creating a list of 1000 source-target pairs. These pairs are unique in the list and verified that there exists at least one path from the source to the target with less than `hoplimit` hops.
+
+The source-target pairs are stored in the folder `/source-target-pairs` as .csv files and if such a file exist, then it is used rather than creating a new one.
+
+`ExperimentHandler` executes each source-pair target for each of the four hop-constrained source-target path enumeration algorithms implemented in this project. It executes the queries in parallel using a fixed thread pool. This is by default set to `4`, but this value should be changed to the number of cores on the processor to be used.
+
+## Running
+
+```bash
+java -cp target/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler <dataset/filename> <hoplimit> <isDatasetLoaded>
+```
+
+Parameters:
+
+- \<dataset/filename> is a filename of a dataset in the folder `/CSV`. The name of the file is used as the name of the graph projection and therefore also the output folder.
+
+- \<hoplimit> is the hoplimit
+
+- \<isDatasetLoaded> is a boolean `true`/`false` which specifies if the dataset is loaded in the neo4j container or not. If `false` then the dataset is loaded using `CsvLoader`, otherwise this is skipped.
+
+---
+
+## **This repository is based on the Neo4j Procedure Template. Its readme is found below:**
 
 # Neo4j Procedure Template
 

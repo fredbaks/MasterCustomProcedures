@@ -1,13 +1,3 @@
-#!/usr/bin/env bash
-# ---------------------------------------------------------------------------
-# run.sh  –  Start (or stop) the Neo4j + GDS Docker container.
-#
-# Usage:
-#   ./run.sh           – start in the foreground (Ctrl-C to stop)
-#   ./run.sh -d        – start in the background (detached)
-#   ./run.sh --stop    – stop and remove the container
-#   ./run.sh --logs    – tail container logs (when running detached)
-# ---------------------------------------------------------------------------
 set -euo pipefail
 
 RED='\033[0;31m'

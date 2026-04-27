@@ -10,8 +10,21 @@ import java.nio.file.StandardOpenOption;
 
 public class FileToCsv {
 
-    // .\mvnw exec:java -D"exec.mainClass"="master.toCSV.Main"
-    // -D"exec.args"="C:\Users\Maffe\Downloads\reactome\reactome.edges"
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("A path is required.");
+            return;
+        }
+
+        String filePath = args[0];
+        String[] filePathArray = filePath.split("\\.");
+        String fileType = filePathArray[filePathArray.length - 1];
+
+        System.out.println("Converting file: " + filePath);
+        new FileToCsv(filePath, fileType);
+        System.out.println("Done!");
+    }
+
     private String filePath;
     private String fileName;
 
@@ -173,10 +186,4 @@ public class FileToCsv {
             e.printStackTrace();
         }
     }
-
-    // LOAD CSV WITH HEADERS FROM '{file path to .csv}' AS row
-    // MERGE (a:Node {id: row.START_ID})
-    // MERGE (b:Node {id: row.END_ID})
-    // MERGE (a)-[:Edge]->(b)
-    // RETURN *
 }

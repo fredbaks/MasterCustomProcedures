@@ -85,7 +85,7 @@ public class ExperimentHandler {
 
         Random random = new Random();
 
-        while (sourceTargetPairs.size() < 30) {
+        while (sourceTargetPairs.size() < 1000) {
             long source = random.nextLong(1, nodeCount);
             long target = random.nextLong(1, nodeCount);
 
