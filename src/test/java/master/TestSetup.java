@@ -38,11 +38,11 @@ public class TestSetup {
                     "/var/lib/neo4j/conf/user-logs.xml")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
-                            System.getProperty("user.dir") + "\\neo4j-graph-data-science-2.23.0.jar"),
+                            System.getProperty("user.dir") + "\\plugins\\neo4j-graph-data-science-2.23.0.jar"),
                     "/var/lib/neo4j/plugins/neo4j-graph-data-science-2.23.0.jar")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
-                            System.getProperty("user.dir") + "\\target\\master-procedures-0.0.1.jar"),
+                            System.getProperty("user.dir") + "\\plugins\\master-procedures-0.0.1.jar"),
                     "/var/lib/neo4j/plugins/master-procedures-0.0.1.jar")
             .withEnv("NEO4J_dbms_security_procedures_unrestricted", "gds.*,master.*")
             .withEnv("NEO4J_dbms_security_procedures_allowlist", "gds.*,master.*")
