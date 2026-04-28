@@ -29,7 +29,7 @@ Thumbs.db
 logs
 testlogs
 testoutput
-plugins\graph-data-science.jar
+plugins/graph-data-science.jar
 .env
 output
 plots
