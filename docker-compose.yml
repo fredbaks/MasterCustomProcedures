@@ -14,7 +14,7 @@ services:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - ./plugins:/var/lib/neo4j/plugins
+      - ./plugins/master-procedures-0.0.1.jar:/var/lib/neo4j/plugins/master-procedures-0.0.1.jar
       - ./conf/user-logs.xml:/var/lib/neo4j/conf/user-logs.xml
       - ./logs:/logs
       - ./output:/var/lib/neo4j/output
