@@ -29,7 +29,7 @@ Thumbs.db
 logs
 testlogs
 testoutput
-neo4j-graph-data-science-2.23.0.jar
+plugins\graph-data-science.jar
 .env
 output
 plots
