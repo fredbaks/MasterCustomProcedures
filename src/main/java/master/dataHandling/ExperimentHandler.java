@@ -25,7 +25,6 @@ import master.neo4j.Neo4jConnector;
 public class ExperimentHandler {
 
     private String projectionName;
-    private int hopLimit;
 
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
@@ -48,12 +47,12 @@ public class ExperimentHandler {
         }
 
         if (args[1] == "single") {
-        String datasetName = args[0];
-        int hopLimit = Integer.parseInt(args[1]);
-        boolean isDataSetLoaded = Boolean.parseBoolean(args[2]);
+            String datasetName = args[0];
+            int hopLimit = Integer.parseInt(args[1]);
+            boolean isDataSetLoaded = Boolean.parseBoolean(args[2]);
 
-        try (Driver driver = Neo4jConnector.createDriver()) {
-            new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
+            try (Driver driver = Neo4jConnector.createDriver()) {
+                new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
             }
         } else if (args[1] == "multiple") {
             ArrayList<String> datasets = new ArrayList<String>();
@@ -106,9 +105,10 @@ public class ExperimentHandler {
         }
     }
 
-    public void writeRandomPairs(String projectionName, int hopLimit) {
+    public void writeRandomPairs() {
 
         HashSet<ArrayList<Long>> sourceTargetPairs = new HashSet<ArrayList<Long>>();
+        HashSet<ArrayList<Long>> nonSourceTargetPairs = new HashSet<ArrayList<Long>>();
 
         int nodeCount = 0;
 
@@ -125,20 +125,21 @@ public class ExperimentHandler {
             pair.add(source);
             pair.add(target);
 
-            if (sourceTargetPairs.contains(pair) || source == target) {
+            if (sourceTargetPairs.contains(pair) || nonSourceTargetPairs.contains(pair) || source == target) {
                 continue;
             }
 
             try {
                 String queryString = String.format(
                         "MATCH (source {id:'%d'}), (target {id:'%d'}) CALL master.bfs('%s', {sourceNode: source, targetNode: target, k: %d}) YIELD result RETURN result",
-                        source, target, projectionName, hopLimit);
+                        source, target, projectionName, 3);
 
                 Record bfsRecord = CypherConnector.runQuery(driver, queryString, true).get(0);
 
                 List<Long> bfsResult = bfsRecord.get("result").asList(v -> v.asLong());
 
                 if (bfsResult.size() == 0) {
+                    nonSourceTargetPairs.add(pair);
                     continue;
                 }
 
@@ -156,7 +157,7 @@ public class ExperimentHandler {
             dir.mkdirs();
         }
 
-        String filePath = getFilePath(projectionName, hopLimit);
+        String filePath = getFilePath(projectionName);
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath, "rw")) {
             raf.setLength(0);
@@ -170,21 +171,21 @@ public class ExperimentHandler {
         }
     }
 
-    private static String getFilePath(String projectionName, int hopLimit) {
-        String fileName = projectionName + "-k_" + hopLimit + ".csv";
+    private static String getFilePath(String projectionName) {
+        String fileName = projectionName + ".csv";
         String filePath = OUTPUT_DIR + File.separator + fileName;
         return filePath;
     }
 
     public void loadSourceTargetPairs() {
 
-        String filePath = getFilePath(projectionName, hopLimit);
+        String filePath = getFilePath(projectionName);
 
         Path pairPath = Paths.get(filePath);
         if (!Files.exists(pairPath)) {
             System.out.println("Found no file with path: " + pairPath + ", creating from stratch");
 
-            writeRandomPairs(projectionName, hopLimit);
+            writeRandomPairs();
         }
 
         sourceTargetPairs = new ArrayList<ArrayList<Long>>();
@@ -204,14 +205,9 @@ public class ExperimentHandler {
         }
     }
 
-    /***
-     * 
-     * @param dataset
-     */
     public void runExperiment(String dataset, int hopLimit, boolean isDataSetLoaded) {
 
         this.projectionName = dataset;
-        this.hopLimit = hopLimit;
 
         if (!isDataSetLoaded) {
             System.out.println("Loading dataset " + dataset);
@@ -267,5 +263,4 @@ public class ExperimentHandler {
         }
 
     }
-
 }
