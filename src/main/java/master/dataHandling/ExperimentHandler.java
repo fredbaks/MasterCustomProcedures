@@ -31,6 +31,8 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
     private static final String[] ALGORITHMS = { "cdfs", "bcdfs", "joinbcdfs", "pathenum" };
+    private static final Integer[] K_VALUES = { 3, 4, 5, 6 };
+    private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
     private int TASK_COUNT;
 
@@ -45,12 +47,42 @@ public class ExperimentHandler {
             System.exit(1);
         }
 
+        if (args[1] == "single") {
         String datasetName = args[0];
         int hopLimit = Integer.parseInt(args[1]);
         boolean isDataSetLoaded = Boolean.parseBoolean(args[2]);
 
         try (Driver driver = Neo4jConnector.createDriver()) {
             new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
+            }
+        } else if (args[1] == "multiple") {
+            ArrayList<String> datasets = new ArrayList<String>();
+
+            if (args.length == 1) {
+                for (String dataset : DATASETS) {
+                    datasets.add(dataset);
+                }
+            } else {
+                for (String arg : args) {
+                    if (arg == "multiple") {
+                        continue;
+                    }
+
+                    datasets.add(arg);
+                }
+            }
+
+            boolean isDataSetLoaded = false;
+
+            for (String dataset : datasets) {
+                isDataSetLoaded = false;
+                for (Integer k : K_VALUES) {
+                    try (Driver driver = Neo4jConnector.createDriver()) {
+                        new ExperimentHandler(driver).runExperiment(dataset, k, isDataSetLoaded);
+                    }
+                    isDataSetLoaded = true;
+                }
+            }
         }
     }
 
