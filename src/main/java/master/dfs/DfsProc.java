@@ -3,15 +3,13 @@ package master.dfs;
 import static org.neo4j.gds.config.NodeIdParser.parseToSingleNodeId;
 import static org.neo4j.procedure.Mode.READ;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
@@ -37,15 +35,30 @@ public class DfsProc extends master.Procedure {
 
         Long source = parseToSingleNodeId(configuration.get("sourceNode"), "sourceNode");
 
+        boolean hasTarget = configuration.get("targetNode") != null;
+
+        Optional<Long> target = hasTarget
+                ? Optional.of(parseToSingleNodeId(configuration.get("targetNode"), "targetNode"))
+                : Optional.empty();
+
+        boolean hasHoplimit = configuration.get("k") != null;
+
+        Long k = hasHoplimit ? (Long) configuration.get("k") : -1;
+
         log.debug("Parsed sourceNode to Long: " + source);
 
         Graph graph = procHelper.getGraph(graphNameString, Optional.empty());
 
         source = graph.toMappedNodeId(source);
+        target = target.isPresent() ? Optional.of(graph.toMappedNodeId(target.get())) : Optional.empty();
 
         log.debug(graph.nodeCount() + ", " + source);
 
-        HugeLongArray result = Dfs.computeDfs(graph, source, log);
+        ArrayList<Long> result = Dfs.computeDfs(source, target, graph, log, k.intValue());
+
+        if (result.isEmpty()) {
+            return Stream.empty();
+        }
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
@@ -58,16 +71,15 @@ public class DfsProc extends master.Procedure {
         public List<Long> result;
         public Path path;
 
-        public DfsResult(Long source, HugeLongArray result, Graph graph, PathFactoryFacade pathFactoryFacade) {
+        public DfsResult(Long source, ArrayList<Long> result, Graph graph, PathFactoryFacade pathFactoryFacade) {
 
             this.source = graph.toOriginalNodeId(source);
 
-            this.result = Arrays.stream(result.toArray())
-                    .boxed()
-                    .map((node) -> {
-                        return graph.toOriginalNodeId(node);
-                    })
-                    .collect(Collectors.toList());
+            this.result = new ArrayList<Long>();
+
+            for (Long node : result) {
+                this.result.add(graph.toOriginalNodeId(node));
+            }
 
             this.path = pathFactoryFacade.createPath(
                     this.result,

@@ -91,7 +91,7 @@ File created by FileToCSV are placed in `CSV/`, and are on the format expected b
 ### Running
 
 ```bash
-java -cp target/master-procedures-0.0.1.jar master.dataHandling.FileToCSV <filePath>
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.FileToCsv <filePath>
 ```
 
 ## Loading datasets — `CsvLoader`
@@ -102,7 +102,7 @@ running Neo4j container.
 ### Running
 
 ```bash
-java -cp target/master-procedures-0.0.1.jar master.dataHandling.CsvLoader <filename>
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.CsvLoader <filename>
 ```
 
 No argument prints usage and exits without touching the database.
@@ -144,7 +144,14 @@ The source-target pairs are stored in the folder `/source-target-pairs` as .csv 
 ## Running
 
 ```bash
-java -cp target/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler <dataset/filename> <hoplimit> <isDatasetLoaded>
+#Single
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler single <dataset/filename> <hoplimit> <isDatasetLoaded>
+
+#Multiple
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler multiple <dataset1> <dataset2> ...
+
+#Multiple with default
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler multiple
 ```
 
 Parameters:

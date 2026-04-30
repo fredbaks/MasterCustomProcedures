@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
@@ -19,12 +20,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 
+import com.carrotsearch.hppc.BitSet;
+
 import master.neo4j.CypherConnector;
 import master.neo4j.Neo4jConnector;
 
 public class ExperimentHandler {
 
     private String projectionName;
+    private int hoplimit;
 
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
@@ -40,30 +44,30 @@ public class ExperimentHandler {
     private ArrayList<ArrayList<Long>> sourceTargetPairs;
 
     public static void main(String[] args) {
-
         if (args.length == 0) {
             System.err.println("Creates random pairs of source target on given projection.");
             System.exit(1);
         }
 
-        if (args[1] == "single") {
-            String datasetName = args[0];
-            int hopLimit = Integer.parseInt(args[1]);
-            boolean isDataSetLoaded = Boolean.parseBoolean(args[2]);
+        if (args[0].equals("single")) {
+            String datasetName = args[1];
+            int hopLimit = Integer.parseInt(args[2]);
+            boolean isDataSetLoaded = Boolean.parseBoolean(args[3]);
 
             try (Driver driver = Neo4jConnector.createDriver()) {
                 new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
             }
-        } else if (args[1] == "multiple") {
+        } else if (args[0].equals("multiple")) {
             ArrayList<String> datasets = new ArrayList<String>();
 
             if (args.length == 1) {
                 for (String dataset : DATASETS) {
                     datasets.add(dataset);
                 }
+
             } else {
                 for (String arg : args) {
-                    if (arg == "multiple") {
+                    if (arg.equals("multiple")) {
                         continue;
                     }
 
@@ -108,43 +112,59 @@ public class ExperimentHandler {
     public void writeRandomPairs() {
 
         HashSet<ArrayList<Long>> sourceTargetPairs = new HashSet<ArrayList<Long>>();
-        HashSet<ArrayList<Long>> nonSourceTargetPairs = new HashSet<ArrayList<Long>>();
 
         int nodeCount = 0;
 
         Record record = CypherConnector.runQuery(driver, "MATCH (a) RETURN COUNT(a) as nodeCount", true).get(0);
         nodeCount = record.get("nodeCount").asInt();
 
+        BitSet expendedSources = new BitSet();
+
         Random random = new Random();
 
         while (sourceTargetPairs.size() < 1000) {
             long source = random.nextLong(1, nodeCount);
-            long target = random.nextLong(1, nodeCount);
 
-            ArrayList<Long> pair = new ArrayList<Long>();
-            pair.add(source);
-            pair.add(target);
-
-            if (sourceTargetPairs.contains(pair) || nonSourceTargetPairs.contains(pair) || source == target) {
+            if (expendedSources.get(source)) {
                 continue;
             }
 
             try {
                 String queryString = String.format(
-                        "MATCH (source {id:'%d'}), (target {id:'%d'}) CALL master.bfs('%s', {sourceNode: source, targetNode: target, k: %d}) YIELD result RETURN result",
-                        source, target, projectionName, 3);
+                        "MATCH (source {id:'%d'}) CALL master.bfstree('%s', {sourceNode: source, k: %d}) YIELD result RETURN result",
+                        source, projectionName, hoplimit);
 
-                Record bfsRecord = CypherConnector.runQuery(driver, queryString, true).get(0);
+                Record dfsRecord = CypherConnector.runQuery(driver, queryString, true).get(0);
 
-                List<Long> bfsResult = bfsRecord.get("result").asList(v -> v.asLong());
+                Map<String, Long> dfsResult = dfsRecord.get("result").asMap(v -> v.asLong());
 
-                if (bfsResult.size() == 0) {
-                    nonSourceTargetPairs.add(pair);
+                List<Long> resultNodes = dfsResult.entrySet().stream().filter(e -> e.getValue() == hoplimit)
+                        .map(Map.Entry::getKey).map(Long::parseLong).collect(java.util.stream.Collectors.toList());
+                java.util.Collections.shuffle(resultNodes, random);
+
+                if (resultNodes.isEmpty()) {
                     continue;
                 }
 
-                sourceTargetPairs.add(pair);
-            } catch (IndexOutOfBoundsException e) {
+                boolean added = false;
+                for (Long nodeId : resultNodes) {
+                    Long target = CypherConnector.getNodeIdProperty(driver, nodeId);
+
+                    ArrayList<Long> pair = new ArrayList<Long>();
+                    pair.add(source);
+                    pair.add(target);
+
+                    if (!sourceTargetPairs.contains(pair)) {
+                        sourceTargetPairs.add(pair);
+                        expendedSources.set(source);
+                        added = true;
+                        break;
+                    }
+                }
+
+                if (!added) {
+                    expendedSources.set(source);
+                }
             } catch (Exception e) {
                 System.out.println("Something went wrong: " + e.getMessage());
                 e.printStackTrace();
@@ -157,7 +177,7 @@ public class ExperimentHandler {
             dir.mkdirs();
         }
 
-        String filePath = getFilePath(projectionName);
+        String filePath = getFilePath(projectionName, hoplimit);
 
         try (RandomAccessFile raf = new RandomAccessFile(filePath, "rw")) {
             raf.setLength(0);
@@ -171,15 +191,15 @@ public class ExperimentHandler {
         }
     }
 
-    private static String getFilePath(String projectionName) {
-        String fileName = projectionName + ".csv";
+    private static String getFilePath(String projectionName, int hoplimit) {
+        String fileName = projectionName + "-k_" + hoplimit + ".csv";
         String filePath = OUTPUT_DIR + File.separator + fileName;
         return filePath;
     }
 
     public void loadSourceTargetPairs() {
 
-        String filePath = getFilePath(projectionName);
+        String filePath = getFilePath(projectionName, hoplimit);
 
         Path pairPath = Paths.get(filePath);
         if (!Files.exists(pairPath)) {
@@ -208,6 +228,7 @@ public class ExperimentHandler {
     public void runExperiment(String dataset, int hopLimit, boolean isDataSetLoaded) {
 
         this.projectionName = dataset;
+        this.hoplimit = hopLimit;
 
         if (!isDataSetLoaded) {
             System.out.println("Loading dataset " + dataset);

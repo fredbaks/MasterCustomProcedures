@@ -3,9 +3,6 @@ package master;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;

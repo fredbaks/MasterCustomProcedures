@@ -25,6 +25,10 @@ public class CypherConnector extends Neo4jConnector {
             YIELD source as sourceNode, startTime, endTime return sourceNode, startTime, endTime
             """;
 
+    private static final String NODE_ID_PROPERTY_QUERY_TEMPLATE = """
+            MATCH (node) WHERE id(node) = %d RETURN node.id as nodeId
+            """;
+
     public static void main(String[] args) {
         if (args.length == 0) {
             System.err.println("Usage: CypherQuery <cypher-query-string> <show-result: false>");
@@ -102,6 +106,12 @@ public class CypherConnector extends Neo4jConnector {
                 projectionName, hopLimit);
 
         runQuery(driver, pathEnumerationQuery, false);
+    }
+
+    public static Long getNodeIdProperty(Driver driver, Long node) {
+        String queryString = String.format(NODE_ID_PROPERTY_QUERY_TEMPLATE, node);
+
+        return Long.parseLong(runQuery(driver, queryString, true).get(0).get("nodeId").asString());
     }
 
 }
