@@ -20,63 +20,63 @@ import master.dataHandling.PathEnumerationResultWriter;
 
 public class PathEnumProc extends master.Procedure {
 
-    @Procedure(name = "master.pathenum", mode = READ)
-    public Stream<PathEnumerationResult> stream(
-            @Name(value = "graphName") String graphNameString,
-            @Name(value = "configuration", defaultValue = "{}") Map<String, Object> configuration) {
+        @Procedure(name = "master.pathenum", mode = READ)
+        public Stream<PathEnumerationResult> stream(
+                        @Name(value = "graphName") String graphNameString,
+                        @Name(value = "configuration", defaultValue = "{}") Map<String, Object> configuration) {
 
-        log.debug("Started pathenum with params, graphname: " + graphNameString);
+                log.debug("Started pathenum with params, graphname: " + graphNameString);
 
-        ProcedureHelper procHelper = new ProcedureHelper(log, transaction, taskRegistryFactory, dbService,
-                username);
+                ProcedureHelper procHelper = new ProcedureHelper(log, transaction, taskRegistryFactory, dbService,
+                                username);
 
-        log.debug("Created procHelper");
+                log.debug("Created procHelper");
 
-        Long source = parseToSingleNodeId(configuration.get("sourceNode"), "sourceNode");
-        Long target = parseToSingleNodeId(configuration.get("targetNode"), "targetNode");
-        long k = (long) configuration.get("k");
-        boolean runJoin = (boolean) configuration.getOrDefault("runJoin", false);
+                Long source = parseToSingleNodeId(configuration.get("sourceNode"), "sourceNode");
+                Long target = parseToSingleNodeId(configuration.get("targetNode"), "targetNode");
+                long k = (long) configuration.get("k");
+                boolean runJoin = (boolean) configuration.getOrDefault("runJoin", false);
 
-        log.debug("Parsed sourceNode to Long: " + source);
-        log.debug("Parsed targetNode to Long: " + target);
-        log.debug("Parsed h to Long: " + k);
+                log.debug("Parsed sourceNode to Long: " + source);
+                log.debug("Parsed targetNode to Long: " + target);
+                log.debug("Parsed h to Long: " + k);
 
-        Graph graph = procHelper.getGraph(graphNameString, Optional.empty());
+                Graph graph = procHelper.getGraph(graphNameString, Optional.empty());
 
-        source = graph.toMappedNodeId(source);
-        target = graph.toMappedNodeId(target);
+                source = graph.toMappedNodeId(source);
+                target = graph.toMappedNodeId(target);
 
-        log.debug("Parsed sourceNode to mapped Long: " + source);
-        log.debug("Parsed targetNode to mapped Long: " + target);
+                log.debug("Parsed sourceNode to mapped Long: " + source);
+                log.debug("Parsed targetNode to mapped Long: " + target);
 
-        log.debug(graph.nodeCount() + ", " + source + ", " + target);
+                log.debug(graph.nodeCount() + ", " + source + ", " + target);
 
-        long timeoutDuration = configuration.containsKey("timeoutDuration")
-                ? ((Number) configuration.get("timeoutDuration")).longValue()
-                : 120000L;
+                long timeoutDuration = configuration.containsKey("timeoutDuration")
+                                ? ((Number) configuration.get("timeoutDuration")).longValue()
+                                : 300000L;
 
-        Long startTime = System.nanoTime();
-        PathEnum dfsEnum = new PathEnum(graph, source, target, (int) k, timeoutDuration, log);
-        PathEnumerationAlgorithmResult results = dfsEnum.computePathEnum(runJoin);
-        Long endTime = System.nanoTime();
+                Long startTime = System.nanoTime();
+                PathEnum dfsEnum = new PathEnum(graph, source, target, (int) k, timeoutDuration, log);
+                PathEnumerationAlgorithmResult results = dfsEnum.computePathEnum(runJoin);
+                Long endTime = System.nanoTime();
 
-        log.debug("time used: " + (endTime - startTime));
+                log.debug("time used: " + (endTime - startTime));
 
-        PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
+                PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-        PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.results, graph,
-                pathFactoryFacade,
-                startTime,
-                endTime, results.timedOut);
+                PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.results, graph,
+                                pathFactoryFacade,
+                                startTime,
+                                endTime, results.timedOut);
 
-        try {
-            new PathEnumerationResultWriter(pathEnumResult, "PathEnum", graphNameString, k, source,
-                    target);
-        } catch (IOException e) {
-            e.printStackTrace();
+                try {
+                        new PathEnumerationResultWriter(pathEnumResult, "PathEnum", graphNameString, k, source,
+                                        target);
+                } catch (IOException e) {
+                        e.printStackTrace();
+                }
+
+                return Stream.of(pathEnumResult);
+
         }
-
-        return Stream.of(pathEnumResult);
-
-    }
 }

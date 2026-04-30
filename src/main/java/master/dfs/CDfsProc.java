@@ -52,7 +52,7 @@ public class CDfsProc extends master.Procedure {
 
         long timeoutDuration = configuration.containsKey("timeoutDuration")
                 ? ((Number) configuration.get("timeoutDuration")).longValue()
-                : 120000L;
+                : 300000L;
 
         Long startTime = System.nanoTime();
         CDfs dfsEnum = new CDfs(graph, source, target, k, timeoutDuration, log);
