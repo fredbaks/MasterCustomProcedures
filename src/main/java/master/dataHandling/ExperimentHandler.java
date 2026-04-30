@@ -140,19 +140,25 @@ public class ExperimentHandler {
                         "MATCH (source {id:'%d'}) CALL master.bfstree('%s', {sourceNode: source, k: %d}) YIELD result RETURN result",
                         source, projectionName, hoplimit);
 
-                Record dfsRecord = CypherConnector.runQuery(driver, queryString, true).get(0);
-
-                Map<String, Long> dfsResult = dfsRecord.get("result").asMap(v -> v.asLong());
-
-                List<Long> resultNodes = dfsResult.entrySet().stream().filter(e -> e.getValue() == hoplimit)
-                        .map(Map.Entry::getKey).map(Long::parseLong).collect(java.util.stream.Collectors.toList());
-                java.util.Collections.shuffle(resultNodes, random);
-
-                if (resultNodes.isEmpty()) {
-                    continue;
-                }
+                List<Record> dfsRecords = CypherConnector.runQuery(driver, queryString, true);
 
                 boolean added = false;
+                List<Long> resultNodes = new ArrayList<>();
+
+                if (!dfsRecords.isEmpty()) {
+                    Record dfsRecord = dfsRecords.getFirst();
+
+                    Map<String, Long> dfsResult = dfsRecord.get("result").asMap(v -> v.asLong());
+
+                    resultNodes = dfsResult.entrySet().stream().filter(e -> e.getValue() == hoplimit)
+                            .map(Map.Entry::getKey).map(Long::parseLong).collect(java.util.stream.Collectors.toList());
+                    java.util.Collections.shuffle(resultNodes, random);
+                }
+
+                if (resultNodes.isEmpty()) {
+                    expendedSources.set(source);
+                }
+
                 for (Long nodeId : resultNodes) {
                     Long target = CypherConnector.getNodeIdProperty(driver, nodeId);
 
@@ -180,6 +186,8 @@ public class ExperimentHandler {
                 continue;
             }
         }
+
+        System.out.println();
 
         File dir = new File(OUTPUT_DIR);
         if (!dir.exists()) {
@@ -301,9 +309,11 @@ public class ExperimentHandler {
         try {
             executor.invokeAll(tasks);
         } catch (InterruptedException e) {
+            System.out.println();
             System.err.println("Something happened during execution of algorithms: " + e.getMessage());
             e.printStackTrace();
         } finally {
+            System.out.println();
             executor.shutdown();
         }
 
