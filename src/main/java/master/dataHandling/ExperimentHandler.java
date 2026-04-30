@@ -37,6 +37,8 @@ public class ExperimentHandler {
     private static final Integer[] K_VALUES = { 3, 4, 5, 6 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
+    private final int SOURCE_TARGET_PAIRS = 1000;
+
     private int TASK_COUNT;
 
     private Driver driver;
@@ -93,18 +95,18 @@ public class ExperimentHandler {
         this.driver = driver;
     };
 
-    private void printProgressBar(int completed) {
+    private void printProgressBar(int completed, int total) {
         int barWidth = 50;
-        double fraction = (double) completed / TASK_COUNT;
+        double fraction = (double) completed / total;
         int filled = (int) (fraction * barWidth);
         StringBuilder bar = new StringBuilder("\r[");
         for (int i = 0; i < barWidth; i++) {
             bar.append(i < filled ? '#' : ' ');
         }
         int percent = (int) (fraction * 100);
-        bar.append(String.format("] %3d%% (%d/%d)", percent, completed, TASK_COUNT));
+        bar.append(String.format("] %3d%% (%d/%d)", percent, completed, total));
         System.out.print(bar);
-        if (completed == TASK_COUNT) {
+        if (completed == total) {
             System.out.println();
         }
     }
@@ -122,7 +124,11 @@ public class ExperimentHandler {
 
         Random random = new Random();
 
-        while (sourceTargetPairs.size() < 1000) {
+        System.out.println("Finding source target pairs");
+        printProgressBar(0, SOURCE_TARGET_PAIRS);
+
+        while (sourceTargetPairs.size() < SOURCE_TARGET_PAIRS) {
+            printProgressBar(sourceTargetPairs.size(), SOURCE_TARGET_PAIRS);
             long source = random.nextLong(1, nodeCount);
 
             if (expendedSources.get(source)) {
@@ -251,7 +257,9 @@ public class ExperimentHandler {
         TASK_COUNT = ALGORITHMS.length * sourceTargetPairs.size();
 
         AtomicInteger completedTasks = new AtomicInteger(0);
-        printProgressBar(0);
+
+        System.out.println("Running queries");
+        printProgressBar(0, TASK_COUNT);
 
         List<Callable<Void>> tasks = new ArrayList<Callable<Void>>();
 
@@ -262,7 +270,7 @@ public class ExperimentHandler {
                     public Void call() throws Exception {
                         CypherConnector.runPathEnumeration(driver, pair.get(0), pair.get(1), algorithm, dataset,
                                 hopLimit);
-                        printProgressBar(completedTasks.incrementAndGet());
+                        printProgressBar(completedTasks.incrementAndGet(), TASK_COUNT);
                         return null;
                     }
                 };
