@@ -162,7 +162,6 @@ public class ExperimentHandler {
 
                     if (!sourceTargetPairs.contains(pair)) {
                         sourceTargetPairs.add(pair);
-                        expendedSources.set(source);
                         added = true;
                         break;
                     }
