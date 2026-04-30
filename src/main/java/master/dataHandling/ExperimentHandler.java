@@ -34,7 +34,7 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
     private static final String[] ALGORITHMS = { "cdfs", "bcdfs", "joinbcdfs", "pathenum" };
-    private static final Integer[] K_VALUES = { 3, 4, 5, 6 };
+    private static final Integer[] K_VALUES = { 3, 4, 5 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
     private final int SOURCE_TARGET_PAIRS = 1000;
@@ -111,7 +111,7 @@ public class ExperimentHandler {
         }
     }
 
-    public void writeRandomPairs() {
+    public boolean writeRandomPairs() {
 
         HashSet<ArrayList<Long>> sourceTargetPairs = new HashSet<ArrayList<Long>>();
 
@@ -170,6 +170,10 @@ public class ExperimentHandler {
                 if (!added) {
                     expendedSources.set(source);
                 }
+
+                if (expendedSources.cardinality() == nodeCount) {
+                    return false;
+                }
             } catch (Exception e) {
                 System.out.println("Something went wrong: " + e.getMessage());
                 e.printStackTrace();
@@ -193,7 +197,10 @@ public class ExperimentHandler {
         } catch (Exception e) {
             System.err.println(
                     "Something went wrong while writing pairs to file: " + e.getMessage() + "\n" + e.getStackTrace());
+            return false;
         }
+
+        return true;
     }
 
     private static String getFilePath(String projectionName, int hoplimit) {
@@ -202,7 +209,7 @@ public class ExperimentHandler {
         return filePath;
     }
 
-    public void loadSourceTargetPairs() {
+    public boolean loadSourceTargetPairs() {
 
         String filePath = getFilePath(projectionName, hoplimit);
 
@@ -210,7 +217,11 @@ public class ExperimentHandler {
         if (!Files.exists(pairPath)) {
             System.out.println("Found no file with path: " + pairPath + ", creating from stratch");
 
-            writeRandomPairs();
+            boolean wasFound = writeRandomPairs();
+
+            if (!wasFound) {
+                return false;
+            }
         }
 
         sourceTargetPairs = new ArrayList<ArrayList<Long>>();
@@ -228,6 +239,7 @@ public class ExperimentHandler {
             e.printStackTrace();
             System.exit(1);
         }
+        return true;
     }
 
     public void runExperiment(String dataset, int hopLimit, boolean isDataSetLoaded) {
@@ -251,7 +263,12 @@ public class ExperimentHandler {
         CypherConnector.createProjection(driver, dataset, true);
 
         System.out.println("Reading source pair data");
-        loadSourceTargetPairs();
+        boolean wasLoaded = loadSourceTargetPairs();
+
+        if (!wasLoaded) {
+            System.out.println("Not enough source-target pairs were found");
+            return;
+        }
 
         TASK_COUNT = ALGORITHMS.length * sourceTargetPairs.size();
 
