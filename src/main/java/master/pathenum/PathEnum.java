@@ -74,7 +74,12 @@ public class PathEnum {
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> {
-            BuildIndex();
+            boolean isTargetReachable = BuildIndex();
+
+            if (!isTargetReachable) {
+                return;
+            }
+
             if (Thread.currentThread().isInterrupted())
                 return;
 
@@ -116,7 +121,7 @@ public class PathEnum {
         return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
     }
 
-    private void BuildIndex() {
+    private boolean BuildIndex() {
         sourceDistance = new HashMap<Long, Integer>();
         targetDistance = new HashMap<Long, Integer>();
 
@@ -130,7 +135,11 @@ public class PathEnum {
         HashMap<Long, Integer> sourceBFSTree = BFS.computeBFSTree(source, graph, log, Optional.of(targetSet), k);
         HashMap<Long, Integer> targetBFSTree = BFS.computeInverseBFSTree(target, graph, log, Optional.of(sourceSet), k);
 
-        int sourceTargetDistance = BFS.computeBFS(source, target, graph, log, Optional.empty()).size() - 1;
+        int sourceTargetDistance = BFS.computeBFS(source, target, graph, log, Optional.empty(), k).size() - 1;
+
+        if (sourceTargetDistance == -1) {
+            return false;
+        }
 
         sourceDistance.put(target, sourceTargetDistance);
         targetDistance.put(source, sourceTargetDistance);
@@ -245,6 +254,7 @@ public class PathEnum {
             }
         }
 
+        return true;
     }
 
     private boolean CardinalityEstimator() {
