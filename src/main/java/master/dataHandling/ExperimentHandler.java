@@ -6,6 +6,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +29,6 @@ import master.neo4j.Neo4jConnector;
 public class ExperimentHandler {
 
     private String projectionName;
-    private int hoplimit;
 
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
@@ -54,10 +54,12 @@ public class ExperimentHandler {
         if (args[0].equals("single")) {
             String datasetName = args[1];
             int hopLimit = Integer.parseInt(args[2]);
-            boolean isDataSetLoaded = Boolean.parseBoolean(args[3]);
+            int sourceTargetHoplimit = Integer.parseInt(args[3]);
+            boolean isDataSetLoaded = Boolean.parseBoolean(args[4]);
 
             try (Driver driver = Neo4jConnector.createDriver()) {
-                new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, isDataSetLoaded);
+                new ExperimentHandler(driver).runExperiment(datasetName, hopLimit, sourceTargetHoplimit,
+                        isDataSetLoaded);
             }
         } else if (args[0].equals("multiple")) {
             ArrayList<String> datasets = new ArrayList<String>();
@@ -83,11 +85,14 @@ public class ExperimentHandler {
                 isDataSetLoaded = false;
                 for (Integer k : K_VALUES) {
                     try (Driver driver = Neo4jConnector.createDriver()) {
-                        new ExperimentHandler(driver).runExperiment(dataset, k, isDataSetLoaded);
+                        new ExperimentHandler(driver).runExperiment(dataset, k, k, isDataSetLoaded);
                     }
                     isDataSetLoaded = true;
                 }
             }
+        } else {
+            System.err.println("Neither single or multiple was sent as first argument");
+            System.exit(0);
         }
     }
 
@@ -111,7 +116,7 @@ public class ExperimentHandler {
         }
     }
 
-    public boolean writeRandomPairs() {
+    public boolean writeRandomPairs(int hoplimit) {
 
         HashSet<ArrayList<Long>> sourceTargetPairs = new HashSet<ArrayList<Long>>();
 
@@ -181,9 +186,9 @@ public class ExperimentHandler {
                     return false;
                 }
             } catch (Exception e) {
-                System.out.println("Something went wrong: " + e.getMessage());
+                System.out.println("\nSomething went wrong: " + e.getMessage());
                 e.printStackTrace();
-                continue;
+                System.exit(1);
             }
         }
 
@@ -217,7 +222,7 @@ public class ExperimentHandler {
         return filePath;
     }
 
-    public boolean loadSourceTargetPairs() {
+    public boolean loadSourceTargetPairs(int hoplimit) {
 
         String filePath = getFilePath(projectionName, hoplimit);
 
@@ -225,7 +230,7 @@ public class ExperimentHandler {
         if (!Files.exists(pairPath)) {
             System.out.println("Found no file with path: " + pairPath + ", creating from stratch");
 
-            boolean wasFound = writeRandomPairs();
+            boolean wasFound = writeRandomPairs(hoplimit);
 
             if (!wasFound) {
                 return false;
@@ -250,10 +255,9 @@ public class ExperimentHandler {
         return true;
     }
 
-    public void runExperiment(String dataset, int hopLimit, boolean isDataSetLoaded) {
+    public void runExperiment(String dataset, int hopLimit, int sourceTargetHoplimit, boolean isDataSetLoaded) {
 
         this.projectionName = dataset;
-        this.hoplimit = hopLimit;
 
         if (!isDataSetLoaded) {
             System.out.println("Loading dataset " + dataset);
@@ -271,7 +275,7 @@ public class ExperimentHandler {
         CypherConnector.createProjection(driver, dataset, true);
 
         System.out.println("Reading source pair data");
-        boolean wasLoaded = loadSourceTargetPairs();
+        boolean wasLoaded = loadSourceTargetPairs(sourceTargetHoplimit);
 
         if (!wasLoaded) {
             System.out.println("Not enough source-target pairs were found");
@@ -317,5 +321,17 @@ public class ExperimentHandler {
             executor.shutdown();
         }
 
+        CypherConnector.dropProjection(driver, dataset);
+
+        Path sourcePath = Paths.get(System.getProperty("user.dir") + File.separator + "output" + File.separator
+                + dataset + "-k_" + hopLimit);
+        Path targetPath = Paths.get(System.getProperty("user.dir") + File.separator + "output" + File.separator
+                + dataset + "-k_" + hopLimit + "-s-t_" + sourceTargetHoplimit);
+
+        try {
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception e) {
+            System.out.println("Could not move output directory");
+        }
     }
 }

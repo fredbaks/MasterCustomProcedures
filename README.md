@@ -126,7 +126,7 @@ It accepts three parameters:
 ```bash
 py visualization/graphCoverageVisualization.py --folder testoutput/testGraph-k_3 --hoplimit 3
 
-py visualization/graphCoverageVisualization.py --folder outputs/bio-grid-yeast-k_6 --hoplimit 6 --show
+py visualization/graphCoverageVisualization.py --folder output/bio-grid-yeast-k_6 --hoplimit 6 --show
 ```
 
 The plotting program assumes the csv files using the same format as the files produces by `PathEnumerationResultWriter`. Using the procedures in this project produces files in folders which follows the expected structure and format.
@@ -135,7 +135,7 @@ The plotting program assumes the csv files using the same format as the files pr
 
 The jar contains a Java class created specifically for running many, parallel enumeration queries. This is used to automate larger scale result production for the thesis.
 
-It creates queries by first creating a list of 1000 source-target pairs. These pairs are unique in the list and verified that there exists at least one path from the source to the target with less than `hoplimit` hops.
+It creates queries by first creating a list of 1000 source-target pairs. These pairs are unique in the list and verified that there exists at least one path from the source to the target with exactly `source-target-hoplimit` hops.
 
 The source-target pairs are stored in the folder `/source-target-pairs` as .csv files and if such a file exist, then it is used rather than creating a new one.
 
@@ -145,7 +145,7 @@ The source-target pairs are stored in the folder `/source-target-pairs` as .csv 
 
 ```bash
 #Single
-java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler single <dataset/filename> <hoplimit> <isDatasetLoaded>
+java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler single <dataset/filename> <hoplimit> <source-target-hoplimit> <isDatasetLoaded>
 
 #Multiple
 java -cp plugins/master-procedures-0.0.1.jar master.dataHandling.ExperimentHandler multiple <dataset1> <dataset2> ...
