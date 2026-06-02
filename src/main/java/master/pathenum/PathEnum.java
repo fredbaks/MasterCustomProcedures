@@ -66,7 +66,7 @@ public class PathEnum {
         targetSet.add(target);
     }
 
-    public PathEnumerationAlgorithmResult computePathEnum(boolean runJoin) {
+    public PathEnumerationAlgorithmResult computePathEnum(boolean forceJoin, boolean forceDfs) {
 
         log.debug("Started PathEnum");
 
@@ -85,7 +85,7 @@ public class PathEnum {
 
             boolean doJoin = CardinalityEstimator();
 
-            if (doJoin || runJoin) {
+            if ((doJoin || forceJoin) && !forceDfs) {
                 int cutIndex = JoinOrderOptimization();
                 if (Thread.currentThread().isInterrupted())
                     return;

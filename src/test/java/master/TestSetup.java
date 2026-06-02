@@ -35,8 +35,8 @@ public class TestSetup {
                     "/var/lib/neo4j/conf/user-logs.xml")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
-                            System.getProperty("user.dir") + "\\plugins\\neo4j-graph-data-science-2.23.0.jar"),
-                    "/var/lib/neo4j/plugins/neo4j-graph-data-science-2.23.0.jar")
+                            System.getProperty("user.dir") + "\\plugins\\graph-data-science.jar"),
+                    "/var/lib/neo4j/plugins/graph-data-science.jar")
             .withCopyFileToContainer(
                     MountableFile.forHostPath(
                             System.getProperty("user.dir") + "\\plugins\\master-procedures-0.0.1.jar"),

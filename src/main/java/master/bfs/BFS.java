@@ -53,8 +53,12 @@ public class BFS {
             currentNode = queue.remove();
             currentDepth = depthMap.get(currentNode);
 
-            if (currentNode.equals(target) || (hopLimit != -1 && currentDepth == hopLimit)) {
+            if (currentNode.equals(target)) {
                 break;
+            }
+
+            if ((hopLimit != -1 && currentDepth == hopLimit + 1)) {
+                continue;
             }
 
             ArrayList<Long> neighbors = new ArrayList<Long>();

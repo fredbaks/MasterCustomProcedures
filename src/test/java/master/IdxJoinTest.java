@@ -16,21 +16,21 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
-public class PathEnumTest extends TestSetup {
+public class IdxJoinTest extends TestSetup {
 
     @Test
     public void dfsProcedureIsRegistered() {
         try (Session session = driver.session()) {
             Result result = session.run(
                     "SHOW PROCEDURES YIELD name " +
-                            "WHERE name = 'master.pathenum' " +
+                            "WHERE name = 'master.idxjoin' " +
                             "RETURN name");
-            assertTrue(result.hasNext(), "Procedure master.pathenum should be registered");
+            assertTrue(result.hasNext(), "Procedure master.idxjoin should be registered");
         }
     }
 
     @Test
-    public void PathEnumProcedureReturnsExpectedPaths() {
+    public void IdxJoinProcedureReturnsExpectedPaths() {
         try (Session session = driver.session()) {
             session.writeTransaction(tx -> {
                 tx.run("UNWIND range(1,60) AS i CREATE (:Node {number:i, name: 'N' + toString(i)});");
@@ -57,7 +57,7 @@ public class PathEnumTest extends TestSetup {
                 algParams.put("k", k);
 
                 Record r = session.run(
-                        "CALL master.pathenum($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
+                        "CALL master.idxjoin($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
                         Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
@@ -72,7 +72,7 @@ public class PathEnumTest extends TestSetup {
             algParams.put("k", 10);
 
             Record r = session.run(
-                    "CALL master.pathenum($graphName, $params) YIELD source, startTime, endTime, timedOut RETURN source, startTime, endTime, timedOut",
+                    "CALL master.idxjoin($graphName, $params) YIELD source, startTime, endTime, timedOut RETURN source, startTime, endTime, timedOut",
                     Map.of("graphName", "testGraph", "params", algParams)).single();
 
             long source = r.get("source").asLong();

@@ -18,9 +18,9 @@ import master.PathEnumerationResult;
 import master.ProcedureHelper;
 import master.dataHandling.PathEnumerationResultWriter;
 
-public class PathEnumProc extends master.Procedure {
+public class IdxDfsProc extends master.Procedure {
 
-        @Procedure(name = "master.pathenum", mode = READ)
+        @Procedure(name = "master.idxdfs", mode = READ)
         public Stream<PathEnumerationResult> stream(
                         @Name(value = "graphName") String graphNameString,
                         @Name(value = "configuration", defaultValue = "{}") Map<String, Object> configuration) {
@@ -56,7 +56,7 @@ public class PathEnumProc extends master.Procedure {
 
                 Long startTime = System.nanoTime();
                 PathEnum dfsEnum = new PathEnum(graph, source, target, (int) k, timeoutDuration, log);
-                PathEnumerationAlgorithmResult results = dfsEnum.computePathEnum(false, false);
+                PathEnumerationAlgorithmResult results = dfsEnum.computePathEnum(false, true);
                 Long endTime = System.nanoTime();
 
                 log.debug("time used: " + (endTime - startTime));
@@ -69,7 +69,7 @@ public class PathEnumProc extends master.Procedure {
                                 endTime, results.timedOut);
 
                 try {
-                        new PathEnumerationResultWriter(pathEnumResult, "PathEnum", graphNameString, k, source,
+                        new PathEnumerationResultWriter(pathEnumResult, "IDXDFS", graphNameString, k, source,
                                         target);
                 } catch (IOException e) {
                         e.printStackTrace();
