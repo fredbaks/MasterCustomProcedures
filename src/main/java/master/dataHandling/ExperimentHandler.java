@@ -2,11 +2,15 @@ package master.dataHandling;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +37,7 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
-    private static final String[] ALGORITHMS = { "idxjoin", "iddfs" };
+    private static final String[] ALGORITHMS = { "idxjoin", "idxdfs" };
     private static final Integer[] K_VALUES = { 3, 4, 5 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
@@ -329,9 +333,45 @@ public class ExperimentHandler {
                 + dataset + "-k_" + hopLimit + "-s-t_" + sourceTargetHoplimit);
 
         try {
-            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            renameAndMerge(sourcePath, targetPath);
         } catch (Exception e) {
-            System.out.println("Could not move output directory");
+            e.printStackTrace();
+            System.out.println("Could not move output directory: " + e.getMessage());
+            System.out.println("SourcePath: " + sourcePath + ", targetPath: " + targetPath);
         }
+    }
+
+    public static void renameAndMerge(Path source, Path target) throws IOException {
+        if (!Files.exists(target)) {
+            Files.move(source, target);
+            return;
+        }
+
+        Files.walkFileTree(source, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attributes)
+                    throws IOException {
+                Path targetDir = target.resolve(source.relativize(directory));
+
+                if (!Files.exists(targetDir)) {
+                    Files.createDirectories(targetDir);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+                Path targetFile = target.resolve(source.relativize(file));
+
+                Files.move(file, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path directory, IOException e) throws IOException {
+                Files.delete(directory);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }
