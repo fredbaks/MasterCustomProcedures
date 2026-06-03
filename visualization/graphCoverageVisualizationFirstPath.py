@@ -126,6 +126,9 @@ def main():
             print(dataset_name, meta.get("GraphName"))
             continue
 
+        # if meta.get("Algorithm") in ["BCDFS", "JoinBCDFS", "CDFS", "PathEnum"]:
+        #     continue
+
         #TODO: what todo with timedOut: true?
         if meta["timedOut"] == 'true':
             continue
@@ -146,7 +149,8 @@ def main():
 
         rows = parse_rows(filepath)
 
-        x_axis_ms = build_plot_data(rows, int(meta["NodeCount"]), int(meta["StartTime"]), int(meta["EndTime"]))
+        enum_start_time = rows[0][1] if rows else int(meta["StartTime"])
+        x_axis_ms = build_plot_data(rows, int(meta["NodeCount"]), enum_start_time, int(meta["EndTime"]))
 
         query_coverages.setdefault(meta["Algorithm"], []).append(x_axis_ms)
         
