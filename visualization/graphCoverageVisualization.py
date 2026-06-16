@@ -23,14 +23,19 @@ import glob
 import os
 import matplotlib.pyplot as plt
 import itertools
+from datetime import datetime
 
 COMMENT_SIZE = 11
 HEADER_SIZE = COMMENT_SIZE + 1
 STEP_COUNT = 1001
 PERCENT_STEP_LIST = [x*0.1 for x in range(STEP_COUNT)]
 
+PLOT_FOLDER_NAME = datetime.now().strftime("%Y-%m-%dT%H-%M")
+
 ALGORITHM_COLOR = {"IDXJOIN": "blue", "IDXDFS": "red", "CDFS": "green", "BCDFS": "orange", "JoinBCDFS": "purple", "PathEnum": "brown"}
-ALGORITHM_NAMES = {"IDXJOIN": "IDX-JOIN", "IDXDFS": "IDX-DFS", "CDFS": "CDFS", "BCDFS": "BCDFS", "JoinBCDFS": "BC-JOIN", "PathEnum": "PathEnum"}
+ALGORITHM_NAMES = {"IDXJOIN": "IDX-JOIN", "IDXDFS": "IDX-DFS", "CDFS": "CDFS", "BCDFS": "BC-DFS", "JoinBCDFS": "BC-JOIN", "PathEnum": "PathEnum"}
+
+result_map: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = {}
 
 def parse_metadata(filepath):
     metadata = {}
@@ -89,29 +94,56 @@ def main():
         type=str,
         required=True,
     )
-    parser.add_argument(
-        "--show", "-s",
-        action=argparse.BooleanOptionalAction,
-    )
     args = parser.parse_args()
 
-    pattern = os.path.join(args.folder, "*.csv")
+    with os.scandir(args.folder) as entries:
+        for entry in entries:
+            if entry.is_dir():
+
+                folder_args = entry.name.split("-k_")
+
+                dataset = folder_args[0]
+                settings = folder_args[1].split("-s-t_")
+                hop_limit = settings[0]
+                source_target_distance = settings[1]
+
+                dataset_map = result_map.get(dataset)
+
+                if dataset_map is None:
+                    result_map[dataset] = {}
+                    dataset_map = result_map[dataset]
+
+                hop_limit_map = dataset_map.get(hop_limit)
+
+                if hop_limit_map is None:
+                    dataset_map[hop_limit] = {}
+                    hop_limit_map = dataset_map[hop_limit]
+
+                hop_limit_map[source_target_distance] = parse_folder(entry.path, dataset, int(hop_limit))
+            
+
+    for dataset, dataset_map in result_map.items():
+        for hop_limit, hop_limit_map in dataset_map.items():
+            for source_target_distance, plot_data in hop_limit_map.items():
+                createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{dataset}-k_{hop_limit}-l_{source_target_distance}", plot_data)
+
+                for algorithm, algorithm_plot_data in plot_data.items():
+                    createPlot(f"{algorithm} on {dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{algorithm}-{dataset}-k_{hop_limit}-l_{source_target_distance}", {algorithm: algorithm_plot_data})
+
+
+
+
+
+def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
+
+    pattern = os.path.join(folder, "*.csv")
     csv_filepaths = glob.glob(pattern)
 
-    folder_args = args.folder.split("/")[-1].split("_")
-
-    source_target_distance = folder_args[-1]
-    # [-2] is n-s-t, n is hoplimit
-    hop_limit = int(folder_args[-2].split("-")[0])
-
-    dataset_name = folder_args[0].split("-k")[0]
-
-    print(source_target_distance)
     print(hop_limit)
     print(dataset_name)
 
     if not csv_filepaths:
-        sys.exit(f"ERROR: No CSV files found in '{args.folder}'")
+        sys.exit(f"ERROR: No CSV files found in '{folder}'")
 
     accepted_meta : dict[str, list[tuple[str,dict[str, str]]]] = {}
     query_coverages : dict[str, list[list[float]]] = {}
@@ -153,7 +185,7 @@ def main():
 
     if not accepted_meta:
         sys.exit(
-            f"ERROR: No CSV files with HopLimit={hop_limit} found in '{args.folder}'"
+            f"ERROR: No CSV files with HopLimit={hop_limit} found in '{folder}'"
         )
 
 
@@ -175,21 +207,21 @@ def main():
         algorithm_coverages_avg_elapsed_ms[algorithm] = coverage_avg_elapsed_ms
 
 
-    meta = list(accepted_meta.items())[0][1][0][1]
-    graph_name = meta["GraphName"]
-    hop_limit = meta["HopLimit"]
+    return algorithm_coverages_avg_elapsed_ms
 
+
+def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]], ):
 
     _, ax = plt.subplots(figsize=(10, 6))
 
-    for algorithm, coverage_avg_elapsed_ms in algorithm_coverages_avg_elapsed_ms.items():
+    for algorithm, coverage_avg_elapsed_ms in plot_data.items():
         print(algorithm, coverage_avg_elapsed_ms[0])
         ax.step(coverage_avg_elapsed_ms, PERCENT_STEP_LIST, where="post", label=ALGORITHM_NAMES[algorithm], linewidth=2, color=ALGORITHM_COLOR[algorithm])
 
     ax.set_xlabel("Time elapsed (ms)", fontsize=12)
     ax.set_ylabel("Graph coverage (%)", fontsize=12)
     ax.set_title(
-        f"{graph_name}  —  k={hop_limit} with d(s,t)={source_target_distance}",
+        plot_title,
         fontsize=13,
     )
     ax.set_ylim(0, 105)
@@ -197,14 +229,14 @@ def main():
     ax.grid(True, linestyle="--", alpha=0.5)
     plt.tight_layout()
 
-    outputName = f"plots/{graph_name}-k{hop_limit}-s-t{source_target_distance}"
+    outputName = f"plots/{PLOT_FOLDER_NAME}/{plot_name}"
 
     os.makedirs(os.path.dirname(outputName), exist_ok=True)
     plt.savefig(outputName, dpi=150)
     print(f"Figure saved to {outputName}")
 
-    if(args.show):
-        plt.show()
+    plt.close()
+
 
 
 if __name__ == "__main__":
