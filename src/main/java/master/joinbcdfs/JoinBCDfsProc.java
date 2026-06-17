@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -59,12 +58,9 @@ public class JoinBCDfsProc extends master.Procedure {
                 PathEnumerationAlgorithmResult results = dfsEnum.startJoinBCDfs();
                 Long endTime = System.nanoTime();
 
-                PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
-
                 PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target, results.paths,
                                 results.timestamps,
                                 graph,
-                                pathFactoryFacade,
                                 startTime, endTime, results.timedOut);
 
                 try {

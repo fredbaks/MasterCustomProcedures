@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.procedures.algorithms.pathfinding.PathFactoryFacade;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
@@ -61,11 +60,8 @@ public class PathEnumProc extends master.Procedure {
 
                 log.debug("time used: " + (endTime - startTime));
 
-                PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
-
                 PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.paths,
                                 results.timestamps, graph,
-                                pathFactoryFacade,
                                 startTime,
                                 endTime, results.timedOut);
 
