@@ -61,7 +61,8 @@ public class JoinBCDfsProc extends master.Procedure {
 
                 PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-                PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target, results.results,
+                PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps,
                                 graph,
                                 pathFactoryFacade,
                                 startTime, endTime, results.timedOut);

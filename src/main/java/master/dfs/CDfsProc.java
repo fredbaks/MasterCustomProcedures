@@ -61,7 +61,8 @@ public class CDfsProc extends master.Procedure {
 
         PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-        PathEnumerationResult cdfsResult = new PathEnumerationResult(source, target, results.results, graph,
+        PathEnumerationResult cdfsResult = new PathEnumerationResult(source, target, results.paths, results.timestamps,
+                graph,
                 pathFactoryFacade, startTime,
                 endTime, results.timedOut);
 

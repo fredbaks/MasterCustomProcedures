@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -34,7 +33,8 @@ public class PathEnum {
     private long timeoutDuration;
     private Log log;
 
-    private ConcurrentHashMap<HugeLongArray, Long> results;
+    private ArrayList<HugeLongArray> resultPaths;
+    private ArrayList<Long> resultTimestamps;
 
     private Set<Long> sourceSet;
     private Set<Long> targetSet;
@@ -70,7 +70,8 @@ public class PathEnum {
 
         log.debug("Started PathEnum");
 
-        results = new ConcurrentHashMap<>();
+        resultPaths = new ArrayList<>();
+        resultTimestamps = new ArrayList<>();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> {
@@ -118,7 +119,7 @@ public class PathEnum {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
     }
 
     private boolean BuildIndex() {
@@ -296,7 +297,8 @@ public class PathEnum {
         Long node = M.get(MSize - 1);
 
         if (node == target) {
-            results.put(M.copyOf(MSize), System.nanoTime());
+            resultPaths.add(M.copyOf(MSize));
+            resultTimestamps.add(System.nanoTime());
             return;
         }
 
@@ -437,7 +439,8 @@ public class PathEnum {
                     continue;
                 }
 
-                results.put(full, System.nanoTime());
+                resultPaths.add(full);
+                resultTimestamps.add(System.nanoTime());
             }
         }
     }

@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +34,8 @@ public class JoinBCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ConcurrentHashMap<HugeLongArray, Long> results;
+    private ArrayList<HugeLongArray> resultPaths;
+    private ArrayList<Long> resultTimestamps;
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
     private ArrayList<HugeLongArray> rightResults;
@@ -55,7 +55,8 @@ public class JoinBCDfs {
 
         log.debug("Started Join BC-Dfs");
 
-        results = new ConcurrentHashMap<>();
+        resultPaths = new ArrayList<>();
+        resultTimestamps = new ArrayList<>();
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
@@ -98,7 +99,7 @@ public class JoinBCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
     }
 
     public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -351,7 +352,8 @@ public class JoinBCDfs {
                             continue;
                         }
 
-                        results.put(path, System.nanoTime());
+                        resultPaths.add(path);
+                        resultTimestamps.add(System.nanoTime());
                     }
                 }
             }

@@ -63,7 +63,8 @@ public class IdxDfsProc extends master.Procedure {
 
                 PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-                PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.results, graph,
+                PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps, graph,
                                 pathFactoryFacade,
                                 startTime,
                                 endTime, results.timedOut);

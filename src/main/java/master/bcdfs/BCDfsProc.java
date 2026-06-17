@@ -63,7 +63,8 @@ public class BCDfsProc extends master.Procedure {
 
                 PathFactoryFacade pathFactoryFacade = PathFactoryFacade.create(true, procHelper.nodeLookup, true);
 
-                PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target, results.results, graph,
+                PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps, graph,
                                 pathFactoryFacade, startTime,
                                 endTime, results.timedOut);
 

@@ -5,7 +5,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,7 +29,8 @@ public class BCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ConcurrentHashMap<HugeLongArray, Long> results;
+    private ArrayList<HugeLongArray> resultPaths;
+    private ArrayList<Long> resultTimestamps;
 
     private BitSet visited;
     private HashMap<Long, Long> bar;
@@ -40,7 +40,8 @@ public class BCDfs {
     public PathEnumerationAlgorithmResult startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        results = new ConcurrentHashMap<>();
+        resultPaths = new ArrayList<>();
+        resultTimestamps = new ArrayList<>();
 
         visited = new BitSet(graph.nodeCount());
 
@@ -74,7 +75,7 @@ public class BCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
     }
 
     public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -96,7 +97,8 @@ public class BCDfs {
         path.set(hopCount, current);
 
         if (current == target) {
-            results.put(path.copyOf(hopCount + 1), System.nanoTime());
+            resultPaths.add(path.copyOf(hopCount + 1));
+            resultTimestamps.add(System.nanoTime());
             return 0L;
         }
 

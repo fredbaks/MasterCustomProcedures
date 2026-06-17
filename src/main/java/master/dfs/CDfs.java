@@ -5,7 +5,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -31,7 +30,8 @@ public class CDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ConcurrentHashMap<HugeLongArray, Long> results;
+    private ArrayList<HugeLongArray> resultPaths;
+    private ArrayList<Long> resultTimestamps;
 
     private HugeLongArrayStack stack;
     private BitSet visited;
@@ -42,7 +42,8 @@ public class CDfs {
 
         log.debug("Started Cdfs");
 
-        results = new ConcurrentHashMap<>();
+        resultPaths = new ArrayList<>();
+        resultTimestamps = new ArrayList<>();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
@@ -75,7 +76,7 @@ public class CDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(new HashMap<HugeLongArray, Long>(results), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
     }
 
     public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -95,7 +96,8 @@ public class CDfs {
         path.set(hopCount, current);
 
         if (current == target) {
-            results.put(path.copyOf(hopCount + 1), System.nanoTime());
+            resultPaths.add(path.copyOf(hopCount + 1));
+            resultTimestamps.add(System.nanoTime());
             return;
         }
 
