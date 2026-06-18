@@ -302,7 +302,7 @@ public class PathEnum {
             return;
         }
 
-        Set<Long> neighbors = NeighborIndex(node, k - MSize, true);
+        List<Long> neighbors = NeighborIndex(node, k - MSize, true);
 
         for (Long neighbor : neighbors) {
             boolean contains = false;
@@ -340,7 +340,7 @@ public class PathEnum {
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
-                Set<Long> neighbors = NeighborIndex(node, k - i, true);
+                List<Long> neighbors = NeighborIndex(node, k - i, true);
 
                 for (Long neighbor : neighbors) {
                     Integer nodeCard = cardinalityEstimation.get(k).get(i).getOrDefault(node, 0);
@@ -368,7 +368,7 @@ public class PathEnum {
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
-                Set<Long> neighbors = NeighborIndex(node, k - i, false);
+                List<Long> neighbors = NeighborIndex(node, k - i, false);
 
                 for (Long neighbor : neighbors) {
                     Integer nodeCard = cardinalityEstimation.get(i).get(0).getOrDefault(node, 0);
@@ -456,7 +456,7 @@ public class PathEnum {
 
         Long node = M.get(MSize - 1);
 
-        Set<Long> set = NeighborIndex(node, k - i - MSize, true);
+        List<Long> set = NeighborIndex(node, k - i - MSize, true);
 
         for (Long neighbor : set) {
             M.set(MSize, neighbor);
@@ -504,8 +504,8 @@ public class PathEnum {
         return output;
     }
 
-    private Set<Long> NeighborIndex(Long node, int length, boolean fromTarget) {
-        Set<Long> output = new HashSet<Long>();
+    private List<Long> NeighborIndex(Long node, int length, boolean fromTarget) {
+        List<Long> output = new ArrayList<Long>();
         List<Long> neighbors = hashMap.get(node);
         if (neighbors == null)
             return output;
