@@ -14,4 +14,9 @@ public class PathEnumerationAlgorithmResult {
         this.timestamps = timestamps;
         this.timedOut = timedOut;
     }
+
+    public void release() {
+        paths = null;
+        timestamps = null;
+    }
 }

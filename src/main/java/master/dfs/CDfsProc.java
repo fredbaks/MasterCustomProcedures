@@ -61,6 +61,7 @@ public class CDfsProc extends master.Procedure {
         PathEnumerationResult cdfsResult = new PathEnumerationResult(source, target, results.paths, results.timestamps,
                 graph, startTime,
                 endTime, results.timedOut);
+        results.release();
 
         try {
             new PathEnumerationResultWriter(cdfsResult, "CDFS", graphNameString, k, source, target);

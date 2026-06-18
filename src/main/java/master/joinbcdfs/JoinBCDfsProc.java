@@ -62,6 +62,7 @@ public class JoinBCDfsProc extends master.Procedure {
                                 results.timestamps,
                                 graph,
                                 startTime, endTime, results.timedOut);
+                results.release();
 
                 try {
                         new PathEnumerationResultWriter(joinBCDfsResult, "JoinBCDFS", graphNameString, k,

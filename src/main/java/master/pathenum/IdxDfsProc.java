@@ -64,6 +64,7 @@ public class IdxDfsProc extends master.Procedure {
                                 results.timestamps, graph,
                                 startTime,
                                 endTime, results.timedOut);
+                results.release();
 
                 try {
                         new PathEnumerationResultWriter(pathEnumResult, "IDXDFS", graphNameString, k, source,

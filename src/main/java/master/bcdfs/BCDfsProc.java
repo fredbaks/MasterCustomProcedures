@@ -63,6 +63,7 @@ public class BCDfsProc extends master.Procedure {
                 PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target, results.paths,
                                 results.timestamps, graph, startTime,
                                 endTime, results.timedOut);
+                results.release();
 
                 try {
                         new PathEnumerationResultWriter(bcdfsResult, "BCDFS", graphNameString, k, source,
