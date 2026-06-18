@@ -43,6 +43,7 @@ public class PathEnum {
 
     private ArrayList<ArrayList<ArrayList<Long>>> distanceMatrix;
     private HashMap<Long, List<Long>> hashMap;
+    private HashMap<Long, List<Long>> inverseHashMap;
 
     private int[][][] bucketDegreeSum;
 
@@ -210,6 +211,25 @@ public class PathEnum {
         targetList.add(target);
         hashMap.put(target, targetList);
 
+        inverseHashMap = new HashMap<Long, List<Long>>();
+        for (Long node : allNodes) {
+            inverseHashMap.put(node, new ArrayList<>());
+        }
+        for (Map.Entry<Long, List<Long>> entry : hashMap.entrySet()) {
+            Long node = entry.getKey();
+            if (node.equals(target))
+                continue;
+            for (Long neighbor : entry.getValue()) {
+                List<Long> inList = inverseHashMap.get(neighbor);
+                if (inList != null) {
+                    inList.add(node);
+                }
+            }
+        }
+        for (List<Long> inNeighbors : inverseHashMap.values()) {
+            inNeighbors.sort(Comparator.comparing(sourceDistance::get));
+        }
+
         bucketDegreeSum = new int[k + 2][k + 2][k + 1];
 
         // Special case: src is bucket (0,*)
@@ -370,7 +390,7 @@ public class PathEnum {
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
-                List<Long> neighbors = NeighborIndex(node, k - i - 1, false);
+                List<Long> neighbors = NeighborIndex(node, i - 1, false);
 
                 for (Long neighbor : neighbors) {
                     Integer nodeCard = cardinalityEstimation.get(i).get(0).getOrDefault(node, 0);
@@ -521,11 +541,17 @@ public class PathEnum {
                 }
             }
         } else {
-            for (Long neighbor : neighbors) {
+            List<Long> inNeighbors = inverseHashMap.get(node);
+            if (inNeighbors == null)
+                return output;
+            for (Long neighbor : inNeighbors) {
                 if (sourceDistance.get(neighbor) <= length) {
                     output.add(neighbor);
+                } else {
+                    break;
                 }
             }
+            return output;
         }
 
         return output;
