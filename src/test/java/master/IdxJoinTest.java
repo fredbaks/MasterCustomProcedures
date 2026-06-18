@@ -4,13 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Record;
+import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -57,15 +56,15 @@ public class IdxJoinTest extends TestSetup {
                 algParams.put("k", k);
 
                 Record r = session.run(
-                        "CALL master.idxjoin($graphName, $params) YIELD source, results, paths RETURN source, results, paths",
+                        "CALL master.idxjoin($graphName, $params) YIELD source, pathCount RETURN source, pathCount",
                         Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
-                List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
+                long pathCount = r.get("pathCount").asLong();
 
                 assertTrue(source == src);
 
-                assertEquals(EXPECTED_DFS_RESULTS[k], results.size(), "Results size should match for k:" + k);
+                assertEquals(EXPECTED_DFS_RESULTS[k], pathCount, "Results size should match for k:" + k);
             }
 
             algParams.put("timeoutDuration", 1L);

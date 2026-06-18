@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -57,11 +56,11 @@ public class CDfsTest extends TestSetup {
                 algParams.put("k", k);
 
                 Record r = session.run(
-                        "CALL master.cdfs($graphName, $params) YIELD source, results, paths, nodeTimestamps, startTime, endTime RETURN source, results, paths, nodeTimestamps, startTime, endTime",
+                        "CALL master.cdfs($graphName, $params) YIELD source, pathCount, nodeTimestamps, startTime, endTime RETURN source, pathCount, nodeTimestamps, startTime, endTime",
                         Map.of("graphName", "testGraph", "params", algParams)).single();
 
                 long source = r.get("source").asLong();
-                List<List<Long>> results = r.get("results").asList(t -> t.asList(n -> Long.parseLong(n.toString())));
+                long pathCount = r.get("pathCount").asLong();
 
                 long startTime = r.get("startTime").asLong();
                 long endTime = r.get("endTime").asLong();
@@ -70,12 +69,8 @@ public class CDfsTest extends TestSetup {
 
                 assertTrue(source == src);
 
-                assertEquals(EXPECTED_DFS_RESULTS[k], results.size(), "Results size should match for k:" + k);
+                assertEquals(EXPECTED_DFS_RESULTS[k], pathCount, "Results size should match for k:" + k);
 
-                for (List<Long> path : results) {
-                    assertEquals(src, path.getFirst());
-                    assertEquals(trg, path.getLast());
-                }
             }
 
             algParams.put("timeoutDuration", 1L);
