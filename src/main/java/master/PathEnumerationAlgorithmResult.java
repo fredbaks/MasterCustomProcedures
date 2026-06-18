@@ -6,10 +6,10 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 
 public class PathEnumerationAlgorithmResult {
     public List<HugeLongArray> paths;
-    public List<Long> timestamps;
+    public long[] timestamps;
     public boolean timedOut;
 
-    public PathEnumerationAlgorithmResult(List<HugeLongArray> paths, List<Long> timestamps, boolean timedOut) {
+    public PathEnumerationAlgorithmResult(List<HugeLongArray> paths, long[] timestamps, boolean timedOut) {
         this.paths = paths;
         this.timestamps = timestamps;
         this.timedOut = timedOut;

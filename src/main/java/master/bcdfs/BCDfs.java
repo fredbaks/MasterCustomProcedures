@@ -19,6 +19,7 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
+import com.carrotsearch.hppc.LongArrayList;
 
 public class BCDfs {
 
@@ -30,7 +31,7 @@ public class BCDfs {
     private Log log;
 
     private ArrayList<HugeLongArray> resultPaths;
-    private ArrayList<Long> resultTimestamps;
+    private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private BitSet visited;
     private HashMap<Long, Long> bar;
@@ -41,7 +42,7 @@ public class BCDfs {
 
         log.debug("Started BC-Dfs");
         resultPaths = new ArrayList<>();
-        resultTimestamps = new ArrayList<>();
+        resultTimestamps = new LongArrayList();
 
         visited = new BitSet(graph.nodeCount());
 
@@ -75,7 +76,7 @@ public class BCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
     }
 
     public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {

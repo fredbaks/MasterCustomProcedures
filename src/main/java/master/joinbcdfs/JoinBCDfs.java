@@ -22,6 +22,7 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
+import com.carrotsearch.hppc.LongArrayList;
 
 public class JoinBCDfs {
 
@@ -35,7 +36,7 @@ public class JoinBCDfs {
     private Log log;
 
     private ArrayList<HugeLongArray> resultPaths;
-    private ArrayList<Long> resultTimestamps;
+    private com.carrotsearch.hppc.LongArrayList resultTimestamps;
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
     private ArrayList<HugeLongArray> rightResults;
@@ -56,7 +57,7 @@ public class JoinBCDfs {
         log.debug("Started Join BC-Dfs");
 
         resultPaths = new ArrayList<>();
-        resultTimestamps = new ArrayList<>();
+        resultTimestamps = new LongArrayList();
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
@@ -99,7 +100,7 @@ public class JoinBCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
     }
 
     public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {

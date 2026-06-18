@@ -15,7 +15,7 @@ public class PathEnumerationResult {
     public Long endTime;
     public boolean timedOut;
 
-    public PathEnumerationResult(Long source, Long target, List<HugeLongArray> pathList, List<Long> timestampList,
+    public PathEnumerationResult(Long source, Long target, List<HugeLongArray> pathList, long[] timestampList,
             Graph graph, Long startTime, Long endTime, boolean timedOut) {
 
         this.source = graph.toOriginalNodeId(source);
@@ -32,7 +32,7 @@ public class PathEnumerationResult {
 
         for (int i = 0; i < pathList.size(); i++) {
             HugeLongArray result = pathList.get(i);
-            long timestamp = timestampList.get(i);
+            long timestamp = timestampList[i];
 
             for (int j = 0; j < result.size(); j++) {
                 long originalId = graph.toOriginalNodeId(result.get(j));

@@ -20,6 +20,7 @@ import org.neo4j.gds.core.utils.paged.HugeLongArrayStack;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
+import com.carrotsearch.hppc.LongArrayList;
 
 public class CDfs {
 
@@ -31,7 +32,7 @@ public class CDfs {
     private Log log;
 
     private ArrayList<HugeLongArray> resultPaths;
-    private ArrayList<Long> resultTimestamps;
+    private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private HugeLongArrayStack stack;
     private BitSet visited;
@@ -43,7 +44,7 @@ public class CDfs {
         log.debug("Started Cdfs");
 
         resultPaths = new ArrayList<>();
-        resultTimestamps = new ArrayList<>();
+        resultTimestamps = new LongArrayList();
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
@@ -76,7 +77,7 @@ public class CDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
     }
 
     public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
