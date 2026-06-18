@@ -323,13 +323,14 @@ public class PathEnum {
 
         Long node = M.get(MSize - 1);
 
-        visited.set(node);
 
         if (node == target) {
             resultPaths.add(M.copyOf(MSize));
             resultTimestamps.add(System.nanoTime());
             return;
         }
+
+        visited.set(node);
 
         List<Long> neighbors = NeighborIndex(node, k - MSize, true);
 
