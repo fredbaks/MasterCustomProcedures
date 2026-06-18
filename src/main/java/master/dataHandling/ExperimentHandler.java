@@ -37,11 +37,11 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
-    private static final String[] ALGORITHMS = { "idxdfs" };
+    private static final String[] ALGORITHMS = { "idxdfs", "pathenum", "idxjoin" };
     private static final Integer[] K_VALUES = { 3, 4, 5 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
-    private final int SOURCE_TARGET_PAIRS = 1000;
+    private final int SOURCE_TARGET_PAIRS = 10;
 
     private int TASK_COUNT;
 
@@ -312,7 +312,7 @@ public class ExperimentHandler {
             }
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(8);
+        ExecutorService executor = Executors.newFixedThreadPool(12);
 
         try {
             executor.invokeAll(tasks);
