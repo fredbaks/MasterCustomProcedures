@@ -342,7 +342,7 @@ public class PathEnum {
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
-                List<Long> neighbors = NeighborIndex(node, k - i, true);
+                List<Long> neighbors = NeighborIndex(node, k - i - 1, true);
 
                 for (Long neighbor : neighbors) {
                     Integer nodeCard = cardinalityEstimation.get(k).get(i).getOrDefault(node, 0);
@@ -370,7 +370,7 @@ public class PathEnum {
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
-                List<Long> neighbors = NeighborIndex(node, k - i, false);
+                List<Long> neighbors = NeighborIndex(node, k - i - 1, false);
 
                 for (Long neighbor : neighbors) {
                     Integer nodeCard = cardinalityEstimation.get(i).get(0).getOrDefault(node, 0);
