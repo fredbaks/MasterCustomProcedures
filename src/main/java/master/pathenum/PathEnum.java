@@ -415,6 +415,8 @@ public class PathEnum {
                 rightSum += cardinalityEstimation.get(k).get(i).getOrDefault(node, 0);
             }
 
+            log.debug("leftsum: " + leftSum + ", rightsum: " + rightSum + ", for i: " + i);
+
             if (leftSum + rightSum < minValue) {
                 minValue = leftSum + rightSum;
                 cutIndex = i;
