@@ -20,6 +20,7 @@ import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
+import com.carrotsearch.hppc.BitSet;
 import com.carrotsearch.hppc.LongArrayList;
 
 import master.AlgorithmTimeoutException;
@@ -34,6 +35,8 @@ public class PathEnum {
     private int k;
     private long timeoutDuration;
     private Log log;
+
+    private BitSet visited;
 
     private ArrayList<HugeLongArray> resultPaths;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
@@ -75,6 +78,8 @@ public class PathEnum {
 
         resultPaths = new ArrayList<>();
         resultTimestamps = new LongArrayList();
+
+        visited = new BitSet();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> {
@@ -318,6 +323,8 @@ public class PathEnum {
 
         Long node = M.get(MSize - 1);
 
+        visited.set(node);
+
         if (node == target) {
             resultPaths.add(M.copyOf(MSize));
             resultTimestamps.add(System.nanoTime());
@@ -327,20 +334,14 @@ public class PathEnum {
         List<Long> neighbors = NeighborIndex(node, k - MSize, true);
 
         for (Long neighbor : neighbors) {
-            boolean contains = false;
-            for (int i = 0; i < MSize; i++) {
-                if (M.get(i) == neighbor) {
-                    contains = true;
-                    break;
-                }
-            }
-            if (contains) {
+            if (visited.get(neighbor)) {
                 continue;
             }
-
             M.set(MSize, neighbor);
             DfsSearch(M, MSize + 1);
         }
+
+        visited.clear(node);
     }
 
     private int JoinOrderOptimization() {
@@ -385,8 +386,8 @@ public class PathEnum {
         for (int i = 1; i <= k; i++) {
             if (!cardinalityEstimation.containsKey(i)) {
                 cardinalityEstimation.put(i, new HashMap<Integer, HashMap<Long, Integer>>());
+                cardinalityEstimation.get(i).put(0, new HashMap<Long, Integer>());
             }
-            cardinalityEstimation.get(i).put(0, new HashMap<Long, Integer>());
             Set<Long> set = IndexLookup(i);
 
             for (Long node : set) {
@@ -415,8 +416,6 @@ public class PathEnum {
                 rightSum += cardinalityEstimation.get(k).get(i).getOrDefault(node, 0);
             }
 
-            log.debug("leftsum: " + leftSum + ", rightsum: " + rightSum + ", for i: " + i);
-
             if (leftSum + rightSum < minValue) {
                 minValue = leftSum + rightSum;
                 cutIndex = i;
@@ -438,7 +437,7 @@ public class PathEnum {
 
         Set<Long> cutNodes = new HashSet<>();
         for (HugeLongArray path : R_a) {
-            cutNodes.add(path.get(path.size() - 1));
+            cutNodes.add(path.get(cutIndex));
         }
 
         HashMap<Long, ArrayList<HugeLongArray>> R_b = new HashMap<>();
@@ -446,7 +445,7 @@ public class PathEnum {
             ArrayList<HugeLongArray> R_b_v = new ArrayList<>();
             HugeLongArray Mv = HugeLongArray.newArray(k + 1);
             Mv.set(0, node);
-            Search(Mv, cutIndex, k - cutIndex + 1, 1, R_b_v);
+            Search(Mv, cutIndex, (k - cutIndex) + 1, 1, R_b_v);
             R_b.put(node, R_b_v);
         }
 
@@ -480,12 +479,18 @@ public class PathEnum {
 
         Long node = M.get(MSize - 1);
 
+        visited.set(node);
+
         List<Long> set = NeighborIndex(node, k - i - MSize, true);
 
         for (Long neighbor : set) {
+            if (visited.get(neighbor) && !neighbor.equals(target)) {
+                continue;
+            }
             M.set(MSize, neighbor);
             Search(M, i, l, MSize + 1, R);
         }
+        visited.clear(node);
     }
 
     private HugeLongArray validateAndMerge(HugeLongArray left, HugeLongArray right) {
