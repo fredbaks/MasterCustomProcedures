@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class PathEnumerationResult {
     public Long source;
-    public int pathCount;
+    public Long pathCount;
     public Map<String, Long> nodeTimestamps = new HashMap<>();
     public Long startTime;
     public Long endTime;
@@ -28,7 +28,7 @@ public class PathEnumerationResult {
             return;
         }
 
-        this.pathCount = pathList.size();
+        this.pathCount = (long) pathList.size();
 
         for (int i = 0; i < pathList.size(); i++) {
             HugeLongArray result = pathList.get(i);
