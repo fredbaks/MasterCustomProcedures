@@ -42,10 +42,10 @@ public class PathEnumerationResultWriter {
         csvComments = String.format(
                 "#Algorithm: %s\n#GraphName: %s\n#HopLimit: %d\n#PathCount: %d\n#StartTime: %d\n#EndTime: %d\n#TotalTime: %d\n#SourceNode: %d\n#TargetNode: %d\n#NodeCount: %d\n#timedOut: %s\n",
                 algorithmName,
-                graphName, hopLimit, result.results.size(), result.startTime, result.endTime,
+                graphName, hopLimit, result.pathCount, result.startTime, result.endTime,
                 result.endTime - result.startTime, sourceNode,
                 targetNode,
-                result.nodeTimestamps.entrySet().size(), result.timedOut);
+                result.nodeTimestamps.size(), result.timedOut);
 
         write(result);
     }
