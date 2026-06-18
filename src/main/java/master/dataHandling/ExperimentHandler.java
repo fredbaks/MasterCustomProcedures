@@ -37,7 +37,7 @@ public class ExperimentHandler {
     private static final String OUTPUT_DIR_NAME = "source-target-pairs";
     private static final String OUTPUT_DIR = System.getProperty("user.dir") + File.separator + OUTPUT_DIR_NAME;
 
-    private static final String[] ALGORITHMS = { "idxdfs", "pathenum", "idxjoin" };
+    private static final String[] ALGORITHMS = { "idxjoin" };
     private static final Integer[] K_VALUES = { 3, 4, 5 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
