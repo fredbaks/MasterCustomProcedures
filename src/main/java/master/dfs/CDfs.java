@@ -76,7 +76,10 @@ public class CDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(
+                // resultPaths, resultTimestamps,
+                null, 0L,
+                timedOut);
     }
 
     public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {

@@ -19,6 +19,7 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
+import com.carrotsearch.hppc.LongLongHashMap;
 
 public class BCDfs {
 
@@ -29,8 +30,11 @@ public class BCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ArrayList<HugeLongArray> resultPaths;
-    private ArrayList<Long> resultTimestamps;
+    private LongLongHashMap nodeTimestamps;
+    private long pathCount = 0L;
+
+    // private ArrayList<HugeLongArray> resultPaths;
+    // private ArrayList<Long> resultTimestamps;
 
     private BitSet visited;
     private HashMap<Long, Long> bar;
@@ -40,8 +44,9 @@ public class BCDfs {
     public PathEnumerationAlgorithmResult startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        resultPaths = new ArrayList<>();
-        resultTimestamps = new ArrayList<>();
+        nodeTimestamps = new LongLongHashMap();
+        // resultPaths = new ArrayList<>();
+        // resultTimestamps = new ArrayList<>();
 
         visited = new BitSet(graph.nodeCount());
 
@@ -75,7 +80,9 @@ public class BCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(
+                // resultPaths, resultTimestamps,
+                nodeTimestamps, pathCount, timedOut);
     }
 
     public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -97,8 +104,15 @@ public class BCDfs {
         path.set(hopCount, current);
 
         if (current == target) {
-            resultPaths.add(path.copyOf(hopCount + 1));
-            resultTimestamps.add(System.nanoTime());
+            long timestamp = System.nanoTime();
+            for (long pathNode : path.toArray()) {
+                nodeTimestamps.putIfAbsent(pathNode, timestamp);
+            }
+
+            pathCount++;
+
+            // resultPaths.add(path.copyOf(hopCount + 1));
+            // resultTimestamps.add(System.nanoTime());
             return 0L;
         }
 

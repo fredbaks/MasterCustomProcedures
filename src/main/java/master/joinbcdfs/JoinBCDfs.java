@@ -22,6 +22,7 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
+import com.carrotsearch.hppc.LongLongHashMap;
 
 public class JoinBCDfs {
 
@@ -34,8 +35,12 @@ public class JoinBCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ArrayList<HugeLongArray> resultPaths;
-    private ArrayList<Long> resultTimestamps;
+    // private ArrayList<HugeLongArray> resultPaths;
+    // private ArrayList<Long> resultTimestamps;
+
+    private LongLongHashMap nodeTimestamps;
+    private long pathCount = 0L;
+
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
     private ArrayList<HugeLongArray> rightResults;
@@ -55,8 +60,11 @@ public class JoinBCDfs {
 
         log.debug("Started Join BC-Dfs");
 
-        resultPaths = new ArrayList<>();
-        resultTimestamps = new ArrayList<>();
+        // resultPaths = new ArrayList<>();
+        // resultTimestamps = new ArrayList<>();
+
+        nodeTimestamps = new LongLongHashMap();
+
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
@@ -99,7 +107,10 @@ public class JoinBCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
+        return new PathEnumerationAlgorithmResult(
+                // resultPaths, resultTimestamps,
+                nodeTimestamps, pathCount,
+                timedOut);
     }
 
     public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -352,8 +363,15 @@ public class JoinBCDfs {
                             continue;
                         }
 
-                        resultPaths.add(path);
-                        resultTimestamps.add(System.nanoTime());
+                        long timestamp = System.nanoTime();
+                        for (long pathNode : path.toArray()) {
+                            nodeTimestamps.putIfAbsent(pathNode, timestamp);
+                        }
+
+                        pathCount++;
+
+                        // resultPaths.add(path);
+                        // resultTimestamps.add(System.nanoTime());
                     }
                 }
             }
