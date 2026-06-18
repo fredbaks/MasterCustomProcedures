@@ -8,6 +8,7 @@ services:
       NEO4J_dbms_security_procedures_unrestricted: "gds.*, master.*"
       NEO4J_dbms_security_procedures_allowlist: "gds.*, master.*"
       NEO4J_server_memory_pagecache_size: "512M"
+      NEO4J_server_jvm_additional: "-XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=60.0"
       NEO4J_server_default__listen__address: "0.0.0.0"
       NEO4j_server_import.allow_read_from_filesystem: "true"
     ports:
