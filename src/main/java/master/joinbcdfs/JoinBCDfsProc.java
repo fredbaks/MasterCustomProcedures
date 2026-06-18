@@ -58,9 +58,8 @@ public class JoinBCDfsProc extends master.Procedure {
                 PathEnumerationAlgorithmResult results = dfsEnum.startJoinBCDfs();
                 Long endTime = System.nanoTime();
 
-                PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target,
-                                // results.paths, results.timestamps,
-                                results.nodeTimestamps, results.pathCount,
+                PathEnumerationResult joinBCDfsResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps,
                                 graph,
                                 startTime, endTime, results.timedOut);
 

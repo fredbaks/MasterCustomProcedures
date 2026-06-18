@@ -20,8 +20,6 @@ import org.neo4j.gds.api.Graph;
 import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
-import com.carrotsearch.hppc.LongLongHashMap;
-
 import master.AlgorithmTimeoutException;
 import master.PathEnumerationAlgorithmResult;
 import master.bfs.BFS;
@@ -35,11 +33,8 @@ public class PathEnum {
     private long timeoutDuration;
     private Log log;
 
-    // private ArrayList<HugeLongArray> resultPaths;
-    // private ArrayList<Long> resultTimestamps;
-
-    private LongLongHashMap nodeTimestamps;
-    private long pathCount = 0L;
+    private ArrayList<HugeLongArray> resultPaths;
+    private ArrayList<Long> resultTimestamps;
 
     private Set<Long> sourceSet;
     private Set<Long> targetSet;
@@ -75,9 +70,8 @@ public class PathEnum {
 
         log.debug("Started PathEnum");
 
-        nodeTimestamps = new LongLongHashMap();
-        // resultPaths = new ArrayList<>();
-        // resultTimestamps = new ArrayList<>();
+        resultPaths = new ArrayList<>();
+        resultTimestamps = new ArrayList<>();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> {
@@ -125,9 +119,7 @@ public class PathEnum {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(
-                // resultPaths, resultTimestamps,
-                nodeTimestamps, pathCount, timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps, timedOut);
     }
 
     private boolean BuildIndex() {
@@ -305,13 +297,8 @@ public class PathEnum {
         Long node = M.get(MSize - 1);
 
         if (node == target) {
-            long timestamp = System.nanoTime();
-            for (long pathNode : M.toArray()) {
-                nodeTimestamps.putIfAbsent(pathNode, timestamp);
-            }
-            pathCount++;
-            // resultPaths.add(M.copyOf(MSize));
-            // resultTimestamps.add(System.nanoTime());
+            resultPaths.add(M.copyOf(MSize));
+            resultTimestamps.add(System.nanoTime());
             return;
         }
 
@@ -452,14 +439,8 @@ public class PathEnum {
                     continue;
                 }
 
-                long timestamp = System.nanoTime();
-                for (long pathNode : full.toArray()) {
-                    nodeTimestamps.putIfAbsent(pathNode, timestamp);
-                }
-                pathCount++;
-
-                // resultPaths.add(full);
-                // resultTimestamps.add(System.nanoTime());
+                resultPaths.add(full);
+                resultTimestamps.add(System.nanoTime());
             }
         }
     }

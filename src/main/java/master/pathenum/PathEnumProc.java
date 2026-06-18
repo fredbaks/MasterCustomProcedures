@@ -60,10 +60,8 @@ public class PathEnumProc extends master.Procedure {
 
                 log.debug("time used: " + (endTime - startTime));
 
-                PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target,
-                                // results.paths, results.timestamps,
-                                results.nodeTimestamps, results.pathCount,
-                                graph,
+                PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps, graph,
                                 startTime,
                                 endTime, results.timedOut);
 

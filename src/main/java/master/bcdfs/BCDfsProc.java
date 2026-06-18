@@ -60,10 +60,8 @@ public class BCDfsProc extends master.Procedure {
                 PathEnumerationAlgorithmResult results = dfsEnum.startBCDfs();
                 Long endTime = System.nanoTime();
 
-                PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target,
-                                // results.paths, results.timestamps,
-                                results.nodeTimestamps, results.pathCount,
-                                graph, startTime,
+                PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target, results.paths,
+                                results.timestamps, graph, startTime,
                                 endTime, results.timedOut);
 
                 try {
