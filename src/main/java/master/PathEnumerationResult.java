@@ -3,6 +3,9 @@ package master;
 import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.api.Graph;
 
+import com.carrotsearch.hppc.LongLongHashMap;
+import com.carrotsearch.hppc.cursors.LongLongCursor;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +33,22 @@ public class PathEnumerationResult {
 
         this.pathCount = (long) pathList.size();
 
+        LongLongHashMap nodeFirstSeen = new LongLongHashMap();
+
         for (int i = 0; i < pathList.size(); i++) {
             HugeLongArray result = pathList.get(i);
             long timestamp = timestampList[i];
 
             for (int j = 0; j < result.size(); j++) {
-                long originalId = graph.toOriginalNodeId(result.get(j));
-                nodeTimestamps.putIfAbsent(String.valueOf(originalId), timestamp);
+                long internalId = result.get(j);
+                if (!nodeFirstSeen.containsKey(internalId)) {
+                    nodeFirstSeen.put(internalId, timestamp);
+                }
             }
+        }
+
+        for (LongLongCursor cursor : nodeFirstSeen) {
+            nodeTimestamps.put(String.valueOf(graph.toOriginalNodeId(cursor.key)), cursor.value);
         }
     }
 }
