@@ -2,6 +2,7 @@ package master.joinbcdfs;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,7 +36,8 @@ public class JoinBCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ArrayList<HugeLongArray> resultPaths;
+    private LongArrayList resultPaths;
+    private int stride;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
@@ -56,8 +58,9 @@ public class JoinBCDfs {
 
         log.debug("Started Join BC-Dfs");
 
-        resultPaths = new ArrayList<>();
+        resultPaths = new LongArrayList();
         resultTimestamps = new LongArrayList();
+        stride = (int) k + 1;
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
@@ -100,7 +103,7 @@ public class JoinBCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
     }
 
     public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -326,17 +329,18 @@ public class JoinBCDfs {
                     new ArrayList<HugeLongArray>());
 
             for (HugeLongArray leftResult : joinableLeftResults) {
-                Long leftSize = leftResult.size() - 1;
+                int leftSize = (int) (leftResult.size() - 1);
 
                 if (leftResult.get(leftSize - 1) == rightResult.get(0)) {
                     if (leftSize == rightSize || leftSize == rightSize + 1) {
                         // -2 size because of one common middlevertices and one vertual target
-                        HugeLongArray path = HugeLongArray.newArray(leftSize + rightSize - 1);
+                        int pathSize = (int) (leftSize + rightSize - 1);
+                        long[] path = new long[pathSize];
 
                         Set<Long> leftNodes = new HashSet<>();
                         for (int i = 0; i < leftSize; i++) {
                             leftNodes.add(leftResult.get(i));
-                            path.addTo(i, leftResult.get(i));
+                            path[i] = leftResult.get(i);
                         }
 
                         boolean hasCommonNode = false;
@@ -346,14 +350,18 @@ public class JoinBCDfs {
                                 continue;
                             }
 
-                            path.addTo(leftSize - 1 + i, rightResult.get(i));
+                            path[leftSize - 1 + i] = rightResult.get(i);
                         }
 
                         if (hasCommonNode) {
                             continue;
                         }
 
-                        resultPaths.add(path);
+                        resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
+                        System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, pathSize);
+                        Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + pathSize,
+                                resultPaths.elementsCount + stride, -1L);
+                        resultPaths.elementsCount += stride;
                         resultTimestamps.add(System.nanoTime());
                     }
                 }

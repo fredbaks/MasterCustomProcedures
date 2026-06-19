@@ -11,11 +11,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import java.util.Arrays;
+
 import master.AlgorithmTimeoutException;
 import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.gds.core.utils.paged.HugeLongArrayStack;
 import org.neo4j.logging.Log;
 
@@ -31,7 +32,8 @@ public class CDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ArrayList<HugeLongArray> resultPaths;
+    private LongArrayList resultPaths;
+    private int stride;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private HugeLongArrayStack stack;
@@ -43,15 +45,18 @@ public class CDfs {
 
         log.debug("Started Cdfs");
 
-        resultPaths = new ArrayList<>();
+        if (k < 0)
+            throw new IllegalArgumentException("CDfs requires non-negative k for flat array storage");
+        resultPaths = new LongArrayList();
         resultTimestamps = new LongArrayList();
+        stride = (int) k + 1;
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
 
         visited = new BitSet();
 
-        HugeLongArray path = HugeLongArray.newArray(k + 1);
+        long[] path = new long[stride];
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> computeCDfs(path, source, 0));
@@ -77,7 +82,7 @@ public class CDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
     }
 
     public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -89,15 +94,19 @@ public class CDfs {
         this.log = log;
     }
 
-    private void computeCDfs(HugeLongArray path, long current, int hopCount) {
+    private void computeCDfs(long[] path, long current, int hopCount) {
 
         if (Thread.currentThread().isInterrupted())
             throw new AlgorithmTimeoutException();
 
-        path.set(hopCount, current);
+        path[hopCount] = current;
 
         if (current == target) {
-            resultPaths.add(path.copyOf(hopCount + 1));
+            resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
+            System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, hopCount + 1);
+            Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + hopCount + 1,
+                    resultPaths.elementsCount + stride, -1L);
+            resultPaths.elementsCount += stride;
             resultTimestamps.add(System.nanoTime());
             return;
         }
@@ -123,7 +132,7 @@ public class CDfs {
         }
 
         visited.clear(current);
-        path.set(hopCount, 0);
+        path[hopCount] = 0;
         return;
     }
 }

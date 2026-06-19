@@ -58,8 +58,8 @@ public class CDfsProc extends master.Procedure {
         PathEnumerationAlgorithmResult results = dfsEnum.startCDfs();
         Long endTime = System.nanoTime();
 
-        PathEnumerationResult cdfsResult = new PathEnumerationResult(source, target, results.paths, results.timestamps,
-                graph, startTime,
+        PathEnumerationResult cdfsResult = new PathEnumerationResult(source, target, results.paths, results.stride,
+                results.timestamps, graph, startTime,
                 endTime, results.timedOut);
         results.release();
 

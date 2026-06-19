@@ -61,7 +61,7 @@ public class BCDfsProc extends master.Procedure {
                 Long endTime = System.nanoTime();
 
                 PathEnumerationResult bcdfsResult = new PathEnumerationResult(source, target, results.paths,
-                                results.timestamps, graph, startTime,
+                                results.stride, results.timestamps, graph, startTime,
                                 endTime, results.timedOut);
                 results.release();
 

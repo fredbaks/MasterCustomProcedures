@@ -61,7 +61,7 @@ public class IdxDfsProc extends master.Procedure {
                 log.debug("time used: " + (endTime - startTime));
 
                 PathEnumerationResult pathEnumResult = new PathEnumerationResult(source, target, results.paths,
-                                results.timestamps, graph,
+                                results.stride, results.timestamps, graph,
                                 startTime,
                                 endTime, results.timedOut);
                 results.release();

@@ -11,11 +11,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import java.util.Arrays;
+
 import master.AlgorithmTimeoutException;
 import master.PathEnumerationAlgorithmResult;
 
 import org.neo4j.gds.api.Graph;
-import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
@@ -30,7 +31,8 @@ public class BCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private ArrayList<HugeLongArray> resultPaths;
+    private LongArrayList resultPaths;
+    private int stride;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private BitSet visited;
@@ -41,14 +43,15 @@ public class BCDfs {
     public PathEnumerationAlgorithmResult startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        resultPaths = new ArrayList<>();
+        resultPaths = new LongArrayList();
         resultTimestamps = new LongArrayList();
+        stride = (int) k + 1;
 
         visited = new BitSet(graph.nodeCount());
 
         bar = new HashMap<Long, Long>();
 
-        HugeLongArray path = HugeLongArray.newArray(k + 1);
+        long[] path = new long[stride];
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<?> future = executor.submit(() -> computeBcDfs(path, source, 0));
@@ -76,7 +79,7 @@ public class BCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
     }
 
     public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -88,17 +91,21 @@ public class BCDfs {
         this.log = log;
     }
 
-    private long computeBcDfs(HugeLongArray path, long current, int hopCount) {
+    private long computeBcDfs(long[] path, long current, int hopCount) {
 
         if (Thread.currentThread().isInterrupted())
             throw new AlgorithmTimeoutException();
 
         long F = k + 1;
 
-        path.set(hopCount, current);
+        path[hopCount] = current;
 
         if (current == target) {
-            resultPaths.add(path.copyOf(hopCount + 1));
+            resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
+            System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, hopCount + 1);
+            Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + hopCount + 1,
+                    resultPaths.elementsCount + stride, -1L);
+            resultPaths.elementsCount += stride;
             resultTimestamps.add(System.nanoTime());
             return 0L;
         }
