@@ -41,7 +41,7 @@ public class ExperimentHandler {
     private static final Integer[] K_VALUES = { 3, 4, 5 };
     private static final String[] DATASETS = { "bio-grid-yeast", "com-amazon", "reactome" };
 
-    private final int SOURCE_TARGET_PAIRS = 10;
+    private final int SOURCE_TARGET_PAIRS = 1000;
 
     private int TASK_COUNT;
 
@@ -312,7 +312,7 @@ public class ExperimentHandler {
             }
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
+        ExecutorService executor = Executors.newFixedThreadPool(6);
 
         try {
             executor.invokeAll(tasks);
