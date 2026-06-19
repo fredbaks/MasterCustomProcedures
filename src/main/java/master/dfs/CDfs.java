@@ -21,7 +21,8 @@ import org.neo4j.gds.core.utils.paged.HugeLongArrayStack;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
-import com.carrotsearch.hppc.LongArrayList;
+
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
 
 public class CDfs {
 
@@ -32,8 +33,9 @@ public class CDfs {
     private long timeoutDuration;
     private Log log;
 
-    private LongArrayList resultPaths;
+    private LongBigArrayBigList resultPaths;
     private int stride;
+    private long[] padding;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private HugeLongArrayStack stack;
@@ -47,9 +49,11 @@ public class CDfs {
 
         if (k < 0)
             throw new IllegalArgumentException("CDfs requires non-negative k for flat array storage");
-        resultPaths = new LongArrayList();
-        resultTimestamps = new LongArrayList();
+        resultPaths = new LongBigArrayBigList();
+        resultTimestamps = new com.carrotsearch.hppc.LongArrayList();
         stride = (int) k + 1;
+        padding = new long[stride];
+        Arrays.fill(padding, -1L);
 
         stack = HugeLongArrayStack.newStack(graph.nodeCount());
         stack.push(source);
@@ -82,7 +86,7 @@ public class CDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, stride, resultTimestamps.toArray(), timedOut);
     }
 
     public CDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -102,11 +106,8 @@ public class CDfs {
         path[hopCount] = current;
 
         if (current == target) {
-            resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
-            System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, hopCount + 1);
-            Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + hopCount + 1,
-                    resultPaths.elementsCount + stride, -1L);
-            resultPaths.elementsCount += stride;
+            Arrays.fill(path, hopCount + 1, stride, -1L);
+            resultPaths.addElements(resultPaths.size64(), new long[][] { path }, 0L, stride);
             resultTimestamps.add(System.nanoTime());
             return;
         }

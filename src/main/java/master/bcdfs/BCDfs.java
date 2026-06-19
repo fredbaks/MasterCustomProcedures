@@ -20,7 +20,8 @@ import org.neo4j.gds.api.Graph;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
-import com.carrotsearch.hppc.LongArrayList;
+
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
 
 public class BCDfs {
 
@@ -31,8 +32,9 @@ public class BCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private LongArrayList resultPaths;
+    private LongBigArrayBigList resultPaths;
     private int stride;
+    private long[] padding;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private BitSet visited;
@@ -43,9 +45,11 @@ public class BCDfs {
     public PathEnumerationAlgorithmResult startBCDfs() {
 
         log.debug("Started BC-Dfs");
-        resultPaths = new LongArrayList();
-        resultTimestamps = new LongArrayList();
+        resultPaths = new LongBigArrayBigList();
+        resultTimestamps = new com.carrotsearch.hppc.LongArrayList();
         stride = (int) k + 1;
+        padding = new long[stride];
+        Arrays.fill(padding, -1L);
 
         visited = new BitSet(graph.nodeCount());
 
@@ -79,7 +83,7 @@ public class BCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, stride, resultTimestamps.toArray(), timedOut);
     }
 
     public BCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -101,11 +105,8 @@ public class BCDfs {
         path[hopCount] = current;
 
         if (current == target) {
-            resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
-            System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, hopCount + 1);
-            Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + hopCount + 1,
-                    resultPaths.elementsCount + stride, -1L);
-            resultPaths.elementsCount += stride;
+            Arrays.fill(path, hopCount + 1, stride, -1L);
+            resultPaths.addElements(resultPaths.size64(), new long[][] { path }, 0L, stride);
             resultTimestamps.add(System.nanoTime());
             return 0L;
         }

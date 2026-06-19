@@ -5,6 +5,9 @@ import org.neo4j.gds.api.Graph;
 import com.carrotsearch.hppc.LongLongHashMap;
 import com.carrotsearch.hppc.cursors.LongLongCursor;
 
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,7 +19,7 @@ public class PathEnumerationResult {
     public Long endTime;
     public boolean timedOut;
 
-    public PathEnumerationResult(Long source, Long target, long[] pathData, int stride,
+    public PathEnumerationResult(Long source, Long target, LongBigArrayBigList pathData, int stride,
             long[] timestampList, Graph graph, Long startTime, Long endTime, boolean timedOut) {
 
         this.source = graph.toOriginalNodeId(source);
@@ -24,24 +27,30 @@ public class PathEnumerationResult {
         this.endTime = endTime;
         this.timedOut = timedOut;
 
-        if (pathData == null || pathData.length == 0) {
+        if (pathData == null || pathData.size64() == 0) {
             this.pathCount = 0L;
             return;
         }
 
-        this.pathCount = (long) (pathData.length / stride);
+        long totalPaths = pathData.size64() / stride;
+        this.pathCount = totalPaths;
 
         LongLongHashMap nodeFirstSeen = new LongLongHashMap();
 
-        for (int i = 0; i < pathCount; i++) {
-            long timestamp = timestampList[i];
-            for (int j = 0; j < stride; j++) {
-                long internalId = pathData[i * stride + j];
-                if (internalId == -1L)
-                    break;
-                if (!nodeFirstSeen.containsKey(internalId)) {
-                    nodeFirstSeen.put(internalId, timestamp);
-                }
+        LongIterator it = pathData.iterator();
+        int pos = 0;
+        int pathIndex = -1;
+        long timestamp = 0L;
+        while (it.hasNext()) {
+            if (pos == 0) {
+                timestamp = timestampList[++pathIndex];
+            }
+            long internalId = it.nextLong();
+            if (internalId != -1L && !nodeFirstSeen.containsKey(internalId)) {
+                nodeFirstSeen.put(internalId, timestamp);
+            }
+            if (++pos == stride) {
+                pos = 0;
             }
         }
 

@@ -23,7 +23,8 @@ import org.neo4j.gds.collections.ha.HugeLongArray;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
-import com.carrotsearch.hppc.LongArrayList;
+
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
 
 public class JoinBCDfs {
 
@@ -36,8 +37,9 @@ public class JoinBCDfs {
     private long timeoutDuration;
     private Log log;
 
-    private LongArrayList resultPaths;
+    private LongBigArrayBigList resultPaths;
     private int stride;
+    private long[] padding;
     private com.carrotsearch.hppc.LongArrayList resultTimestamps;
     private ArrayList<HugeLongArray> tempResults;
     private ArrayList<HugeLongArray> leftResults;
@@ -58,9 +60,11 @@ public class JoinBCDfs {
 
         log.debug("Started Join BC-Dfs");
 
-        resultPaths = new LongArrayList();
-        resultTimestamps = new LongArrayList();
+        resultPaths = new LongBigArrayBigList();
+        resultTimestamps = new com.carrotsearch.hppc.LongArrayList();
         stride = (int) k + 1;
+        padding = new long[stride];
+        Arrays.fill(padding, -1L);
         tempResults = new ArrayList<HugeLongArray>();
 
         kCeil = (long) Math.ceil(((double) k) / 2);
@@ -103,7 +107,7 @@ public class JoinBCDfs {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), stride, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, stride, resultTimestamps.toArray(), timedOut);
     }
 
     public JoinBCDfs(Graph graph, long source, long target, long k, long timeoutDuration, Log log) {
@@ -357,11 +361,11 @@ public class JoinBCDfs {
                             continue;
                         }
 
-                        resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
-                        System.arraycopy(path, 0, resultPaths.buffer, resultPaths.elementsCount, pathSize);
-                        Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + pathSize,
-                                resultPaths.elementsCount + stride, -1L);
-                        resultPaths.elementsCount += stride;
+                        resultPaths.addElements(resultPaths.size64(), new long[][] { path }, 0L, pathSize);
+                        if (pathSize < stride) {
+                            resultPaths.addElements(resultPaths.size64(), new long[][] { padding }, 0L,
+                                    stride - pathSize);
+                        }
                         resultTimestamps.add(System.nanoTime());
                     }
                 }

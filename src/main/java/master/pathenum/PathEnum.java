@@ -22,7 +22,8 @@ import org.neo4j.gds.api.Graph;
 import org.neo4j.logging.Log;
 
 import com.carrotsearch.hppc.BitSet;
-import com.carrotsearch.hppc.LongArrayList;
+
+import it.unimi.dsi.fastutil.longs.LongBigArrayBigList;
 
 import master.AlgorithmTimeoutException;
 import master.PathEnumerationAlgorithmResult;
@@ -39,9 +40,10 @@ public class PathEnum {
 
     private BitSet visited;
 
-    private LongArrayList resultPaths;
+    private LongBigArrayBigList resultPaths;
     private int stride;
-    private LongArrayList resultTimestamps;
+    private long[] padding;
+    private com.carrotsearch.hppc.LongArrayList resultTimestamps;
 
     private Set<Long> sourceSet;
     private Set<Long> targetSet;
@@ -78,9 +80,11 @@ public class PathEnum {
 
         log.debug("Started PathEnum");
 
-        resultPaths = new LongArrayList();
-        resultTimestamps = new LongArrayList();
+        resultPaths = new LongBigArrayBigList();
+        resultTimestamps = new com.carrotsearch.hppc.LongArrayList();
         stride = (int) k + 1;
+        padding = new long[stride];
+        java.util.Arrays.fill(padding, -1L);
 
         visited = new BitSet();
 
@@ -130,7 +134,7 @@ public class PathEnum {
             executor.shutdownNow();
         }
 
-        return new PathEnumerationAlgorithmResult(resultPaths.toArray(), k + 1, resultTimestamps.toArray(), timedOut);
+        return new PathEnumerationAlgorithmResult(resultPaths, k + 1, resultTimestamps.toArray(), timedOut);
     }
 
     private boolean BuildIndex() {
@@ -327,10 +331,8 @@ public class PathEnum {
         long node = M[MSize - 1];
 
         if (node == target) {
-            resultPaths.ensureCapacity(resultPaths.elementsCount + stride);
-            System.arraycopy(M, 0, resultPaths.buffer, resultPaths.elementsCount, MSize);
-            Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + MSize, resultPaths.elementsCount + stride, -1L);
-            resultPaths.elementsCount += stride;
+            Arrays.fill(M, MSize, stride, -1L);
+            resultPaths.addElements(resultPaths.size64(), new long[][] { M }, 0L, stride);
             resultTimestamps.add(System.nanoTime());
             return;
         }
@@ -470,11 +472,10 @@ public class PathEnum {
                 }
 
                 int fullSize = full.length;
-                resultPaths.ensureCapacity(resultPaths.elementsCount + k + 1);
-                System.arraycopy(full, 0, resultPaths.buffer, resultPaths.elementsCount, fullSize);
-                Arrays.fill(resultPaths.buffer, resultPaths.elementsCount + fullSize, resultPaths.elementsCount + k + 1,
-                        -1L);
-                resultPaths.elementsCount += k + 1;
+                resultPaths.addElements(resultPaths.size64(), new long[][] { full }, 0L, fullSize);
+                if (fullSize < stride) {
+                    resultPaths.addElements(resultPaths.size64(), new long[][] { padding }, 0L, stride - fullSize);
+                }
                 resultTimestamps.add(System.nanoTime());
             }
         }
