@@ -136,6 +136,8 @@ def main():
 
 def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
+    timed_out = {}
+
     pattern = os.path.join(folder, "*.csv")
     csv_filepaths = glob.glob(pattern)
 
@@ -160,6 +162,13 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
         #TODO: what todo with timedOut: true?
         if meta["timedOut"] == 'true':
+            alg_timed_out = timed_out.get(meta["Algorithm"])
+
+            if alg_timed_out == None:
+                timed_out[meta["Algorithm"]] = 0
+
+            timed_out[meta["Algorithm"]] += 1
+            
             continue
 
         key = f"{meta["SourceNode"]}-{meta["TargetNode"]}"
@@ -188,10 +197,15 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
             f"ERROR: No CSV files with HopLimit={hop_limit} found in '{folder}'"
         )
 
+    
 
     algorithm_coverages_avg_elapsed_ms : dict[str, list[float]] = {}
 
     for algorithm, coverages in query_coverages.items():
+
+        if (timed_out[algorithm] > 250):
+            print(f"{algorithm} timed out over 250 for dataset {dataset_name} on k={hop_limit}")
+            continue
 
         coverage_avg_elapsed_ms = [0.0] * STEP_COUNT
         
