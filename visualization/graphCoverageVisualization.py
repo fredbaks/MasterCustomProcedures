@@ -203,7 +203,7 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
     for algorithm, coverages in query_coverages.items():
 
-        if (timed_out[algorithm] > 250):
+        if timed_out.get(algorithm, 0) > 250:
             print(f"{algorithm} timed out over 250 for dataset {dataset_name} on k={hop_limit}")
             continue
 
