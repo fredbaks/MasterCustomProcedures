@@ -242,10 +242,10 @@ def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]
     ax.tick_params(labelsize=16)
     ax.set_xlabel("Time elapsed (ms)", fontsize=20)
     ax.set_ylabel("Graph coverage (%)", fontsize=20)
-    ax.set_title(
-        plot_title,
-        fontsize=24,
-    )
+    # ax.set_title(
+    #     plot_title,
+    #     fontsize=24,
+    # )
     ax.legend(fontsize=18)
     ax.grid(True, linestyle="--", alpha=0.5, linewidth=1)
     plt.tight_layout()
