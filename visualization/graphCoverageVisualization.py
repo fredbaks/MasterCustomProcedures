@@ -23,6 +23,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 import itertools
+import numpy as np
 from datetime import datetime
 
 COMMENT_SIZE = 11
@@ -34,6 +35,7 @@ PLOT_FOLDER_NAME = datetime.now().strftime("%Y-%m-%dT%H-%M")
 
 ALGORITHM_COLOR = {"IDXJOIN": "blue", "IDXDFS": "red", "CDFS": "green", "BCDFS": "orange", "JoinBCDFS": "purple", "PathEnum": "brown"}
 ALGORITHM_NAMES = {"IDXJOIN": "IDX-JOIN", "IDXDFS": "IDX-DFS", "CDFS": "CDFS", "BCDFS": "BC-DFS", "JoinBCDFS": "BC-JOIN", "PathEnum": "PathEnum"}
+ALGORTIHM_MARKERS = {"IDXJOIN": "o", "IDXDFS": "v", "CDFS": "s", "BCDFS": "h", "JoinBCDFS": "p", "PathEnum": "d"}
 
 result_map: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = {}
 
@@ -128,7 +130,7 @@ def main():
                 createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{dataset}-k_{hop_limit}-l_{source_target_distance}", plot_data)
 
                 for algorithm, algorithm_plot_data in plot_data.items():
-                    createPlot(f"{algorithm} on {dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{algorithm}-{dataset}-k_{hop_limit}-l_{source_target_distance}", {algorithm: algorithm_plot_data})
+                    createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{algorithm}-{dataset}-k_{hop_limit}-l_{source_target_distance}", {algorithm: algorithm_plot_data})
 
 
 
@@ -226,21 +228,25 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
 def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]], ):
 
-    _, ax = plt.subplots(figsize=(10, 6))
+    _, ax = plt.subplots(figsize=(10, 7))
 
     for algorithm, coverage_avg_elapsed_ms in plot_data.items():
         print(algorithm, coverage_avg_elapsed_ms[0])
-        ax.step(coverage_avg_elapsed_ms, PERCENT_STEP_LIST, where="post", label=ALGORITHM_NAMES[algorithm], linewidth=2, color=ALGORITHM_COLOR[algorithm])
+        ax.step(coverage_avg_elapsed_ms, PERCENT_STEP_LIST, where="post", label=ALGORITHM_NAMES[algorithm], linewidth=2.5, color=ALGORITHM_COLOR[algorithm], marker=ALGORTIHM_MARKERS[algorithm], markersize=7, markevery=100)
 
-    ax.set_xlabel("Time elapsed (ms)", fontsize=12)
-    ax.set_ylabel("Graph coverage (%)", fontsize=12)
+    ax.set_ylim(0, 105)
+    ax.set_xlim(0)
+    ax.set_yticks(np.linspace(0, 100, 11))
+    ax.set_xticks(np.arange((t := ax.get_xticks())[0], t[-1] + (s := (t[1]-t[0])), s))
+    ax.tick_params(labelsize=16)
+    ax.set_xlabel("Time elapsed (ms)", fontsize=20)
+    ax.set_ylabel("Graph coverage (%)", fontsize=20)
     ax.set_title(
         plot_title,
-        fontsize=13,
+        fontsize=24,
     )
-    ax.set_ylim(0, 105)
-    ax.legend(fontsize=11)
-    ax.grid(True, linestyle="--", alpha=0.5)
+    ax.legend(fontsize=18)
+    ax.grid(True, linestyle="--", alpha=0.5, linewidth=1)
     plt.tight_layout()
 
     outputName = f"plots/{PLOT_FOLDER_NAME}/{plot_name}"
