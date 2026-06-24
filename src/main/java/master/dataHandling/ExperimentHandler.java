@@ -312,7 +312,7 @@ public class ExperimentHandler {
             }
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(4);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
 
         try {
             executor.invokeAll(tasks);
