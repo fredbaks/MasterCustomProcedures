@@ -235,9 +235,10 @@ def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]
         ax.step(coverage_avg_elapsed_ms, PERCENT_STEP_LIST, where="post", label=ALGORITHM_NAMES[algorithm], linewidth=2.5, color=ALGORITHM_COLOR[algorithm], marker=ALGORTIHM_MARKERS[algorithm], markersize=7, markevery=100)
 
     ax.set_ylim(0, 105)
-    ax.set_xlim(0)
     ax.set_yticks(np.linspace(0, 100, 11))
-    ax.set_xticks(np.arange((t := ax.get_xticks())[0], t[-1] + (s := (t[1]-t[0])), s))
+    t = ax.get_xticks(); s = t[1] - t[0]
+    ax.set_xlim(-s/4, t[-1]-(s/2))
+    ax.set_xticks(np.arange(0, t[-1], s))
     ax.tick_params(labelsize=16)
     ax.set_xlabel("Time elapsed (ms)", fontsize=20)
     ax.set_ylabel("Graph coverage (%)", fontsize=20)
