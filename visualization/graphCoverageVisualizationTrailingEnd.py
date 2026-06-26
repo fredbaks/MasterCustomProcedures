@@ -29,7 +29,7 @@ from datetime import datetime
 COMMENT_SIZE = 11
 HEADER_SIZE = COMMENT_SIZE + 1
 STEP_COUNT = 1001
-PERCENT_STEP_LIST = [x*0.1 for x in range(STEP_COUNT)]
+PERCENT_STEP_LIST = [x*0.1 for x in range(STEP_COUNT)] + [100.0]
 
 PLOT_FOLDER_NAME = datetime.now().strftime("%Y-%m-%dT%H-%M")
 
@@ -85,7 +85,7 @@ def  build_plot_data(rows : list[tuple[str, int]], node_count: int, start_time: 
 
     filled_x_axis_ms[0] = 0.0
 
-    return filled_x_axis_ms
+    return filled_x_axis_ms + [end_ms]
 
 def main():
     parser = argparse.ArgumentParser(
@@ -216,7 +216,7 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
             print(f"{algorithm} timed out over 250 for dataset {dataset_name} on k={hop_limit}")
             continue
 
-        coverage_avg_elapsed_ms = [0.0] * STEP_COUNT
+        coverage_avg_elapsed_ms = [0.0] * len(coverages[0])
         
         query_count = len(coverages)
 
