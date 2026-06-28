@@ -159,7 +159,7 @@ def main():
 
                 if cdfs_included:
                     plot_data.pop("CDFS")
-                    createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"No-CDFS-{dataset}-k_{hop_limit}-l_{source_target_distance}", pathenum_plot_data)
+                    createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"No-CDFS-{dataset}-k_{hop_limit}-l_{source_target_distance}", plot_data)
 
     write_avg_counts(avg_counts_map)
 
