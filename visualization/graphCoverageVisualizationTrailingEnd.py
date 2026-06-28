@@ -18,6 +18,7 @@ Example:
 """
 
 import argparse
+import csv
 import sys
 import glob
 import os
@@ -38,6 +39,8 @@ ALGORITHM_NAMES = {"IDXJOIN": "IDX-JOIN", "IDXDFS": "IDX-DFS", "CDFS": "CDFS", "
 ALGORTIHM_MARKERS = {"IDXJOIN": "o", "IDXDFS": "v", "CDFS": "s", "BCDFS": "h", "JoinBCDFS": "p", "PathEnum": "d"}
 
 result_map: dict[str, dict[str, dict[str, dict[str, list[float]]]]] = {}
+# for counting average path count and node count per query group.
+avg_counts_map: dict[str, dict[str, dict[str, dict[str, float]]]] = {}
 
 def parse_metadata(filepath):
     metadata = {}
@@ -110,18 +113,28 @@ def main():
                 source_target_distance = settings[1]
 
                 dataset_map = result_map.get(dataset)
+                dataset_count_map = avg_counts_map.get(dataset)
 
                 if dataset_map is None:
                     result_map[dataset] = {}
                     dataset_map = result_map[dataset]
 
+                if dataset_count_map is None:
+                    avg_counts_map[dataset] = {}
+                    dataset_count_map = avg_counts_map[dataset]
+
                 hop_limit_map = dataset_map.get(hop_limit)
+                data_hop_count_map = dataset_count_map.get(hop_limit)
 
                 if hop_limit_map is None:
                     dataset_map[hop_limit] = {}
                     hop_limit_map = dataset_map[hop_limit]
 
-                hop_limit_map[source_target_distance] = parse_folder(entry.path, dataset, int(hop_limit))
+                if data_hop_count_map is None:
+                    dataset_count_map[hop_limit] = {}
+                    data_hop_count_map = dataset_count_map[hop_limit]
+
+                (hop_limit_map[source_target_distance], data_hop_count_map[source_target_distance]) = parse_folder(entry.path, dataset, int(hop_limit))
             
 
     for dataset, dataset_map in result_map.items():
@@ -131,27 +144,53 @@ def main():
 
                 pathenum_plot_data = {}
 
+                cdfs_included = False
+
                 for algorithm, algorithm_plot_data in plot_data.items():
                     createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"{algorithm}-{dataset}-k_{hop_limit}-l_{source_target_distance}", {algorithm: algorithm_plot_data})
 
                     if algorithm in ["IDXJOIN", "IDXDFS", "PathEnum"]:
                         pathenum_plot_data[algorithm] = algorithm_plot_data
 
+                    if algorithm == "CDFS":
+                        cdfs_included = True
+
                 createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"PathEnumFamily-{dataset}-k_{hop_limit}-l_{source_target_distance}", pathenum_plot_data)
 
+                if cdfs_included:
+                    plot_data.pop("CDFS")
+                    createPlot(f"{dataset} with k={hop_limit} and d(s,t)={source_target_distance}", f"No-CDFS-{dataset}-k_{hop_limit}-l_{source_target_distance}", pathenum_plot_data)
+
+    write_avg_counts(avg_counts_map)
 
 
+
+
+def write_avg_counts(avg_counts_map: dict):
+    output_path = f"plots/{PLOT_FOLDER_NAME}/avg_counts.csv"
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["dataset", "hop_limit", "s_t_distance", "avg_nodecount", "avg_pathcount"])
+        for dataset, hop_limit_map in avg_counts_map.items():
+            for hop_limit, source_target_map in hop_limit_map.items():
+                for source_target_distance, counts in source_target_map.items():
+                    writer.writerow([
+                        dataset,
+                        hop_limit,
+                        source_target_distance,
+                        counts["avg_nodecount"],
+                        counts["avg_pathcount"],
+                    ])
+    print(f"Avg counts written to {output_path}")
 
 
 def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
     timed_out = {}
+    count_map = {"nodecount": 0, "pathcount": 0, "querycount": 0}
 
     pattern = os.path.join(folder, "*.csv")
     csv_filepaths = glob.glob(pattern)
-
-    print(hop_limit)
-    print(dataset_name)
 
     if not csv_filepaths:
         sys.exit(f"ERROR: No CSV files found in '{folder}'")
@@ -161,13 +200,14 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
     for filepath in csv_filepaths:
         meta = parse_metadata(filepath)
 
-        file_hoplimit = int(meta.get("HopLimit", -1))
-        if file_hoplimit != hop_limit:
-            print(file_hoplimit, hop_limit)
-            continue
-        if dataset_name != meta.get("GraphName", ""):
-            print(dataset_name, meta.get("GraphName"))
-            continue
+        # Has never happened so commented out
+        # file_hoplimit = int(meta.get("HopLimit", -1))
+        # if file_hoplimit != hop_limit:
+        #     print(file_hoplimit, hop_limit)
+        #     continue
+        # if dataset_name != meta.get("GraphName", ""):
+        #     print(dataset_name, meta.get("GraphName"))
+        #     continue
 
         #TODO: what todo with timedOut: true?
         if meta["timedOut"] == 'true':
@@ -179,6 +219,10 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
             timed_out[meta["Algorithm"]] += 1
             
             continue
+
+        count_map["nodecount"] += int(meta["NodeCount"])
+        count_map["pathcount"] += int(meta["PathCount"])
+        count_map["querycount"] += 1
 
         key = f"{meta["SourceNode"]}-{meta["TargetNode"]}"
 
@@ -212,8 +256,8 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
 
     for algorithm, coverages in query_coverages.items():
 
-        if timed_out.get(algorithm, 0) > 250:
-            print(f"{algorithm} timed out over 250 for dataset {dataset_name} on k={hop_limit}")
+        if timed_out.get(algorithm, 0) > 200:
+            print(f"{algorithm} timed out over 200 for dataset {dataset_name} on k={hop_limit}")
             continue
 
         coverage_avg_elapsed_ms = [0.0] * len(coverages[0])
@@ -230,7 +274,8 @@ def parse_folder(folder: str, dataset_name: str, hop_limit: int, ):
         algorithm_coverages_avg_elapsed_ms[algorithm] = coverage_avg_elapsed_ms
 
 
-    return algorithm_coverages_avg_elapsed_ms
+
+    return algorithm_coverages_avg_elapsed_ms, {"avg_nodecount" : count_map["nodecount"]/count_map["querycount"], "avg_pathcount": count_map["pathcount"]/ count_map["querycount"]}
 
 
 def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]], ):
@@ -238,7 +283,6 @@ def createPlot(plot_title: str, plot_name: str, plot_data: dict[str, list[float]
     _, ax = plt.subplots(figsize=(10, 7))
 
     for algorithm, coverage_avg_elapsed_ms in plot_data.items():
-        print(algorithm, coverage_avg_elapsed_ms[0])
         ax.step(coverage_avg_elapsed_ms, PERCENT_STEP_LIST, where="post", label=ALGORITHM_NAMES[algorithm], linewidth=2.5, color=ALGORITHM_COLOR[algorithm], marker=ALGORTIHM_MARKERS[algorithm], markersize=7, markevery=100)
 
     ax.set_ylim(0, 105)
